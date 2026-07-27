@@ -24,10 +24,14 @@ THE GATES (all must pass, else the answer is refused)
                  CITED source. This is what stops "45 de zile" when the source
                  says 30, the failure mode that actually costs money here.
   D. GROUNDING   ⭐the strong one, and the only gate the model cannot talk its way
-                 past. Every substantive sentence must reuse the vocabulary of a
-                 cited document. Nothing about it depends on the model following
-                 an instruction, which is why it still works on a 2B model that
-                 cannot reliably obey a citation format.
+                 past. Every substantive sentence is scored against each cited
+                 document separately and attributed to its best match; it must
+                 clear MIN_GROUND against ONE document. Nothing about it depends
+                 on the model following an instruction, which is why it still
+                 works on a 2B model that cannot reliably obey a citation format.
+                 Gate D also REBUILDS the citation list from the documents that
+                 actually carried a sentence, so a model that pads its sources
+                 gains nothing: the padding is stripped and logged.
 
 WHAT THE FIRST TEST RUN TAUGHT (kept because it is the point of the whole demo)
   Ungrounded, this model said EORI meant "European Union Chamber of Commerce and
@@ -162,6 +166,21 @@ def _content_words(text):
     return [w for w in re.findall(r'[a-z]{4,}', _norm(text)) if w not in STOPWORDS]
 
 
+# ⭐Romanian is heavily inflected, and exact word matching punishes grammar rather
+# than ungroundedness. The source says "trimitere ... extracomunitara este
+# returnata"; the model wrote "extracomunitar ... returnat". Same words, different
+# agreement, and exact matching scored that sentence at exactly 0.5000 against a
+# 0.50 threshold. It passed only because the comparison is < and not <=, which is
+# luck, not a margin. Comparing a fixed-length prefix instead treats an inflection
+# as the match it obviously is, and lifts that same sentence to 0.83.
+# Crude, but it is the right kind of crude: it forgives morphology, not meaning.
+STEM = 6
+
+
+def _stems(words):
+    return {w[:STEM] for w in words}
+
+
 def ask(question, verbose=True):
     docs = load_docs()
     vectors = build_index(docs)
@@ -241,7 +260,8 @@ def ask(question, verbose=True):
         else:
             invented.append(t)
     cited = list(dict.fromkeys(cited))          # dedupe, keep order
-    record['cited'] = cited
+    # What the model CLAIMS it used. Gate D decides what it actually used.
+    record['cited_claimed'] = cited
 
     if not tokens:
         record.update(verdict='REFUZAT', gate='B_CITATION',
@@ -263,35 +283,69 @@ def ask(question, verbose=True):
                       reason=f'cifre nesustinute de sursele citate: {unsupported}')
         return _finish(record, REFUSAL, verbose)
 
-    # GATE D: ⭐the one that does not ask the model to cooperate.
-    # Numbering the fragments made gate B easy to satisfy: any digit in range now
-    # passes, so citation alone no longer proves much. This gate checks the PROSE
-    # against the SOURCE TEXT instead. Every substantive sentence must reuse the
-    # vocabulary of a document it cited. A sentence carried in from pretraining
-    # ("Capitala Frantei este Paris") shares almost no content words with a customs
-    # corpus and scores near zero, no matter how neatly the answer was signed.
+    # GATE D + ATTRIBUTION: ⭐the one that does not ask the model to cooperate,
+    # and the one that decides which citations are REAL.
+    #
+    # Numbering the fragments made gate B cheap to satisfy: any digit in range
+    # passes, so the model can pad its citation list for free. The first all-green
+    # run did exactly that. It answered a parcel-return question correctly out of
+    # posta-returnare and then also cited eori-art18, which has nothing to do with
+    # the question. The ANSWER was trustworthy and the CITATION LIST was noise,
+    # which is precisely backwards for a system whose selling point is traceability.
+    #
+    # So citations are no longer taken on the model's word. Each substantive
+    # sentence is scored against each cited document SEPARATELY and attributed to
+    # its best match, and it must clear MIN_GROUND against ONE document rather than
+    # against a mosaic of words pooled from three (pooling was the earlier version
+    # and it is strictly weaker: it lets three loosely-related sources launder a
+    # sentence none of them actually supports). The printed source list is then
+    # rebuilt from the documents that actually carried a sentence. Anything the
+    # model named but never used is dropped and logged as padding.
     sentences = [s.strip() for s in re.split(r'(?<=[.!?;:])\s+|\n+', answer) if s.strip()]
-    src_words = set(_content_words(cited_text))
-    ungrounded = []
-    scores = []
+    per_doc_words = {c: _stems(_content_words(by_id[c]['body'])) for c in cited}
+    attribution, ungrounded, used = [], [], []
     for s in sentences:
         words = _content_words(s)
         if len(words) < MIN_SENTENCE_WORDS:
             continue                     # too short to judge, and too short to smuggle a claim
-        overlap = sum(w in src_words for w in words) / len(words)
-        scores.append({'sentence': s[:90], 'overlap': round(overlap, 2)})
-        if overlap < MIN_GROUND:
-            ungrounded.append(f'{overlap:.0%} "{s[:70]}"')
-    record['grounding'] = scores
+        best, score = None, 0.0
+        for c in cited:
+            ov = sum(w[:STEM] in per_doc_words[c] for w in words) / len(words)
+            if ov > score:
+                best, score = c, ov
+        attribution.append({'sentence': s, 'source': best, 'overlap': round(score, 2)})
+        if score < MIN_GROUND:
+            ungrounded.append(f'{score:.0%} "{s[:70]}"')
+        elif best not in used:
+            used.append(best)
+    record['attribution'] = attribution
+
     if ungrounded:
         record.update(verdict='REFUZAT', gate='D_GROUNDING',
                       reason=f'propozitii nesustinute de sursele citate: {ungrounded}')
         return _finish(record, REFUSAL, verbose)
+    if not used:
+        record.update(verdict='REFUZAT', gate='D_GROUNDING',
+                      reason='nicio propozitie nu a putut fi atribuita unei surse')
+        return _finish(record, REFUSAL, verbose)
+
+    padding = [c for c in cited if c not in used]
+    record['cited_dropped_as_padding'] = padding
+    record['cited'] = used
 
     record.update(verdict='ACCEPTAT', gate=None, reason=None)
     sources = '\n'.join(f"  [{c}] {by_id[c]['titlu']}\n      {by_id[c]['sursa']} "
-                        f"(verificat {by_id[c]['verificat']})" for c in cited)
-    return _finish(record, f'{answer}\n\nSURSE:\n{sources}', verbose)
+                        f"(verificat {by_id[c]['verificat']})" for c in used)
+    # Per-sentence attribution is printed, not just a source list, because "here
+    # are three links, one of these supports it somewhere" is the weak form of
+    # citation that this whole demo exists to argue against.
+    detail = '\n'.join(f'  {a["overlap"]:>4.0%} [{a["source"]}]  {a["sentence"]}'
+                       for a in attribution)
+    text = f'{answer}\n\nSURSE:\n{sources}\n\nATRIBUIRE (fiecare propozitie, sursa care o sustine):\n{detail}'
+    if padding:
+        text += ('\n\nIGNORAT (surse pe care modelul le-a invocat dar nu le-a folosit): '
+                 + ', '.join(padding))
+    return _finish(record, text, verbose)
 
 
 def _finish(record, text, verbose):

@@ -6,36 +6,51 @@ Q: Care este capitala Frantei si cati locuitori are?
 ==============================================================================
 Q: Ce documente imi trebuie pentru un permis de conducere?
    (near-domain impostor, outscores every real question on similarity (0.773))
-   -> REFUZAT at gate MODEL_ABSTAINED (modelul a declarat ca nu stie)  [32s]
+   -> REFUZAT at gate MODEL_ABSTAINED (modelul a declarat ca nu stie)  [34s]
    -> expected REFUZAT: PASS
    raw: 'NU_STIU \nSURSE: 1, 2'
 ==============================================================================
 Q: In cate zile se returneaza un colet daca nu depun documentele?
    (legitimate, answer is verbatim in posta-returnare)
-   -> ACCEPTAT  [63s]
+   -> ACCEPTAT  [57s]
    -> expected ACCEPTAT: PASS
    raw: 'Un colet extracomunitar este returnat expeditorului in urmatoarele situatii: daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare; daca destinatarul nu a pus la dispozitie docume'
+   claimed sources : ['posta-returnare', 'eori-art18']
+   verified sources: ['posta-returnare']
+   PADDING STRIPPED: ['eori-art18']
    --- answer shown to the user ---
    Un colet extracomunitar este returnat expeditorului in urmatoarele situatii: daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare; daca destinatarul nu a pus la dispozitie documentatia completa in termen de 45 de zile de la avizare.
    
    SURSE:
      [posta-returnare] Termenele de returnare a unei trimiteri extracomunitare
          https://www.posta-romana.ro/track-trace.html (verificat 2026-07-27)
-     [eori-art18] Cine poate depune cererea de EORI in numele altei persoane
-         https://www.customs.ro/e-customs/eori (sectiunea 7, art. 18) (verificat 2026-07-23)
+   
+   ATRIBUIRE (fiecare propozitie, sursa care o sustine):
+      83% [posta-returnare]  Un colet extracomunitar este returnat expeditorului in urmatoarele situatii:
+     100% [posta-returnare]  daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare;
+     100% [posta-returnare]  daca destinatarul nu a pus la dispozitie documentatia completa in termen de 45 de zile de la avizare.
+   
+   IGNORAT (surse pe care modelul le-a invocat dar nu le-a folosit): eori-art18
 ==============================================================================
 Q: Ce inseamna EORI si cat costa obtinerea lui?
    (legitimate, and the exact question the ungrounded model got WRONG)
-   -> ACCEPTAT  [61s]
+   -> ACCEPTAT  [58s]
    -> expected ACCEPTAT: PASS
    raw: 'EORI este Economic Operators Registration and Identification, care reprezinta inregistrarea si identificarea operatorilor economici. Numărul EORI este atribuit gratuit si termenul mediu de solutionare este de 5 zile, iar'
+   claimed sources : ['posta-eori-prag', 'eori-structura']
+   verified sources: ['eori-structura']
+   PADDING STRIPPED: ['posta-eori-prag']
    --- answer shown to the user ---
    EORI este Economic Operators Registration and Identification, care reprezinta inregistrarea si identificarea operatorilor economici. Numărul EORI este atribuit gratuit si termenul mediu de solutionare este de 5 zile, iar termenul maxim este de 30 de zile.
    
    SURSE:
-     [posta-eori-prag] Cand este obligatoriu codul EORI pentru o trimitere postala
-         https://www.posta-romana.ro/track-trace.html (verificat 2026-07-27)
      [eori-structura] Structura si costul numarului EORI in Romania
          https://www.customs.ro/e-customs/eori (sectiunea 8) (verificat 2026-07-23)
+   
+   ATRIBUIRE (fiecare propozitie, sursa care o sustine):
+      90% [eori-structura]  EORI este Economic Operators Registration and Identification, care reprezinta inregistrarea si identificarea operatorilor economici.
+     100% [eori-structura]  Numărul EORI este atribuit gratuit si termenul mediu de solutionare este de 5 zile, iar termenul maxim este de 30 de zile.
+   
+   IGNORAT (surse pe care modelul le-a invocat dar nu le-a folosit): posta-eori-prag
 ==============================================================================
 4 passed, 0 failed, out of 4

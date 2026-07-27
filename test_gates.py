@@ -44,6 +44,11 @@ def main():
               f'{"PASS" if ok else "FAIL"}')
         if record.get('raw'):
             print(f'   raw: {record["raw"][:220]!r}')
+        if record.get('cited_claimed'):
+            print(f'   claimed sources : {record["cited_claimed"]}')
+            print(f'   verified sources: {record.get("cited")}')
+            if record.get('cited_dropped_as_padding'):
+                print(f'   PADDING STRIPPED: {record["cited_dropped_as_padding"]}')
         if got_accept:
             print('   --- answer shown to the user ---')
             for line in text.splitlines():

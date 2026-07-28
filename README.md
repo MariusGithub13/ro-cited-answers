@@ -1,4 +1,8 @@
-# Răspunsuri citate sau refuzate
+# Cited or refused
+
+*(Romanian: „Răspunsuri citate sau refuzate". The prose here is English; the corpus,
+the questions and the quoted model output stay in Romanian, because a Romanian-language
+grounding demo is the whole point and the quotes are verbatim evidence.)*
 
 A small, self-hosted Romanian question-answering demo that will not give you an
 answer it cannot trace to a source document.

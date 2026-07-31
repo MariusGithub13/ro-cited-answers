@@ -1,0 +1,134 @@
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1200px; height:1200px; background:#fcfcfb; font-family:"DejaVu Sans","Liberation Sans",system-ui,sans-serif; }
+  .viz-root{
+    --surface-1:#fcfcfb;
+    --text-primary:#0b0b0b;
+    --text-secondary:#52514e;
+    --text-muted:#6f6e6a;
+    --series-genuine:#2a78d6;
+    --series-impostor:#eb6834;
+    --grid:#e4e3df;
+    width:1200px; height:1200px; padding:70px 72px 56px; display:flex; flex-direction:column;
+  }
+  .eyebrow{ font-size:20px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-muted); font-weight:700; }
+  h1{ font-size:50px; line-height:1.16; color:var(--text-primary); font-weight:700; margin-top:20px; letter-spacing:-.017em; }
+  .sub{ font-size:24px; line-height:1.45; color:var(--text-secondary); margin-top:20px; max-width:1000px; }
+
+  .legend{ display:flex; gap:38px; margin-top:40px; align-items:center; }
+  .lg{ display:flex; align-items:center; gap:12px; font-size:22px; color:var(--text-secondary); }
+  .dot{ width:18px; height:18px; border-radius:50%; }
+
+  .plot{ position:relative; margin-top:40px; height:360px; }
+  .band{ position:absolute; top:0; bottom:56px; background:rgba(235,104,52,.10); border-left:2px dashed rgba(235,104,52,.55); border-right:2px dashed rgba(235,104,52,.55); }
+  .bandlab{ position:absolute; top:-4px; font-size:19px; font-weight:700; color:#b4471c; text-align:center; }
+  .row{ position:absolute; left:0; right:0; height:1px; }
+  .rowline{ position:absolute; left:0; right:0; top:50%; height:1px; background:var(--grid); }
+  .rowlab{ position:absolute; left:0; bottom:calc(50% + 20px); font-size:20px; font-weight:700; letter-spacing:.04em; color:var(--text-secondary); white-space:nowrap; }
+  .pt{ position:absolute; width:22px; height:22px; border-radius:50%; top:50%; transform:translate(-50%,-50%); box-shadow:0 0 0 3px var(--surface-1); }
+  .axis{ position:absolute; left:0; right:0; bottom:34px; height:1px; background:#c9c8c3; }
+  .tick{ position:absolute; bottom:6px; transform:translateX(-50%); font-size:19px; color:var(--text-muted); }
+  .tickm{ position:absolute; bottom:26px; width:1px; height:8px; background:#c9c8c3; }
+  .callout{ position:absolute; font-size:20px; font-weight:700; white-space:nowrap; }
+
+  .kv{ display:flex; gap:0; margin-top:22px; border-top:2px solid #e4e3df; }
+  .k{ flex:1; padding:26px 30px 0 0; }
+  .k + .k{ padding-left:34px; border-left:2px solid #e4e3df; }
+  .knum{ font-size:40px; font-weight:700; color:var(--text-primary); letter-spacing:-.02em; }
+  .knum .u{ font-size:25px; font-weight:700; color:var(--text-secondary); }
+  .ktx{ font-size:20px; line-height:1.42; color:var(--text-secondary); margin-top:10px; }
+
+  .foot{ margin-top:auto; padding-top:24px; border-top:2px solid #e4e3df; display:flex; justify-content:space-between; align-items:baseline; }
+  .foot .l{ font-size:20px; color:var(--text-secondary); }
+  .foot .r{ font-size:19px; color:var(--text-muted); }
+</style>
+
+<div class="viz-root">
+  <div class="eyebrow">Retrieval confidence, measured</div>
+  <h1>A retrieval score cannot tell you when to refuse</h1>
+  <div class="sub">Top cosine similarity against a 5-document Romanian customs corpus. 14 questions, nomic-embed-text. The two populations overlap, so no cut-off separates them.</div>
+
+  <div class="legend">
+    <div class="lg"><span class="dot" style="background:#2a78d6"></span>In corpus &middot; should be answered</div>
+    <div class="lg"><span class="dot" style="background:#eb6834"></span>Out of corpus &middot; should be refused</div>
+  </div>
+
+  <div class="plot" id="plot"></div>
+
+  <div class="kv">
+    <div class="k">
+      <div class="knum">6 <span class="u">of 7</span></div>
+      <div class="ktx">real questions you must throw away to block every impostor (bar set above 0.773)</div>
+    </div>
+    <div class="k">
+      <div class="knum">2 <span class="u">impostors</span></div>
+      <div class="ktx">get through if you keep every real question (bar set at 0.697)</div>
+    </div>
+    <div class="k">
+      <div class="knum">&minus;0.076</div>
+      <div class="ktx">separation margin. Negative means the populations overlap, not merely touch</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="l">Reproducible: <strong>calibrate.py</strong> &middot; github.com/MariusGithub13/ro-cited-answers</div>
+    <div class="r">Marius Andronie &middot; Devaland</div>
+  </div>
+</div>
+
+<script>
+const GEN=[0.697,0.723,0.729,0.734,0.752,0.754,0.794];
+const IMP=[0.773,0.698,0.611,0.599,0.599,0.586,0.560];
+const MIN=0.545,MAX=0.812;
+const plot=document.getElementById('plot');
+const W=plot.clientWidth;
+const x=v=>((v-MIN)/(MAX-MIN))*W;
+
+// overlap band 0.697 -> 0.773
+const band=document.createElement('div');
+band.className='band';
+band.style.left=x(0.697)+'px';
+band.style.width=(x(0.773)-x(0.697))+'px';
+plot.appendChild(band);
+const bl=document.createElement('div');
+bl.className='bandlab';
+bl.style.left=x(0.697)+'px';
+bl.style.width=(x(0.773)-x(0.697))+'px';
+bl.innerHTML='overlap zone<br><span style="font-weight:400;color:#8a5a3c">every threshold here is wrong</span>';
+plot.appendChild(bl);
+
+function row(top,label,vals,color){
+  const r=document.createElement('div');
+  r.className='row'; r.style.top=top+'px';
+  const ln=document.createElement('div'); ln.className='rowline'; r.appendChild(ln);
+  const lb=document.createElement('div'); lb.className='rowlab'; lb.innerHTML=label; r.appendChild(lb);
+  vals.forEach(v=>{
+    const d=document.createElement('div');
+    d.className='pt'; d.style.left=x(v)+'px'; d.style.background=color;
+    r.appendChild(d);
+  });
+  plot.appendChild(r);
+}
+row(112,'IN CORPUS',GEN,'#2a78d6');
+row(226,'OUT OF CORPUS',IMP,'#eb6834');
+
+// axis
+const ax=document.createElement('div'); ax.className='axis'; plot.appendChild(ax);
+[0.55,0.60,0.65,0.70,0.75,0.80].forEach(t=>{
+  const m=document.createElement('div'); m.className='tickm'; m.style.left=x(t)+'px'; plot.appendChild(m);
+  const l=document.createElement('div'); l.className='tick'; l.style.left=x(t)+'px'; l.textContent=t.toFixed(2); plot.appendChild(l);
+});
+
+// selective direct labels on the two decisive points
+function callout(v,text,top,color,align){
+  const c=document.createElement('div');
+  c.className='callout'; c.style.top=top+'px'; c.style.color=color;
+  c.textContent=text;
+  c.style.left=x(v)+'px';
+  c.style.transform = align==='right' ? 'translateX(-100%)' : 'translateX(0)';
+  if(align==='right') c.style.paddingRight='12px'; else c.style.paddingLeft='12px';
+  plot.appendChild(c);
+}
+callout(0.697,'0.697  lowest real question',64,'#1c5da8','right');
+callout(0.773,'0.773  impostor: driving licence paperwork',278,'#b4471c','right');
+</script>

@@ -6,35 +6,21 @@ Q: Care este capitala Frantei si cati locuitori are?
 ==============================================================================
 Q: Ce documente imi trebuie pentru un permis de conducere?
    (near-domain impostor, outscores every real question on similarity (0.773))
-   -> REFUZAT at gate MODEL_ABSTAINED (modelul a declarat ca nu stie)  [34s]
+   -> REFUZAT at gate MODEL_ABSTAINED (modelul a declarat ca nu stie)  [57s]
    -> expected REFUZAT: PASS
    raw: 'NU_STIU \nSURSE: 1, 2'
 ==============================================================================
 Q: In cate zile se returneaza un colet daca nu depun documentele?
    (legitimate, answer is verbatim in posta-returnare)
-   -> ACCEPTAT  [57s]
-   -> expected ACCEPTAT: PASS
-   raw: 'Un colet extracomunitar este returnat expeditorului in urmatoarele situatii: daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare; daca destinatarul nu a pus la dispozitie docume'
+   -> REFUZAT at gate D_GROUNDING (propozitii nesustinute de sursele citate: ['43% "-  Un numar EORI se verifica in registrul EORI al Comisiei Europene."'])  [288s]
+   -> expected ACCEPTAT: FAIL
+   raw: '- O trimitere extracomunitara este returnata expeditorului in urmatoarele situatii: daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare; daca destinatarul nu a pus la dispozitie'
    claimed sources : ['posta-returnare', 'eori-art18']
-   verified sources: ['posta-returnare']
-   PADDING STRIPPED: ['eori-art18']
-   --- answer shown to the user ---
-   Un colet extracomunitar este returnat expeditorului in urmatoarele situatii: daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare; daca destinatarul nu a pus la dispozitie documentatia completa in termen de 45 de zile de la avizare.
-   
-   SURSE:
-     [posta-returnare] Termenele de returnare a unei trimiteri extracomunitare
-         https://www.posta-romana.ro/track-trace.html (verificat 2026-07-27)
-   
-   ATRIBUIRE (fiecare propozitie, sursa care o sustine):
-      83% [posta-returnare]  Un colet extracomunitar este returnat expeditorului in urmatoarele situatii:
-     100% [posta-returnare]  daca destinatarul nu a pus la dispozitie niciun document in termen de 30 de zile de la avizare;
-     100% [posta-returnare]  daca destinatarul nu a pus la dispozitie documentatia completa in termen de 45 de zile de la avizare.
-   
-   IGNORAT (surse pe care modelul le-a invocat dar nu le-a folosit): eori-art18
+   verified sources: None
 ==============================================================================
 Q: Ce inseamna EORI si cat costa obtinerea lui?
    (legitimate, and the exact question the ungrounded model got WRONG)
-   -> ACCEPTAT  [58s]
+   -> ACCEPTAT  [111s]
    -> expected ACCEPTAT: PASS
    raw: 'EORI este Economic Operators Registration and Identification, care reprezinta inregistrarea si identificarea operatorilor economici. Numărul EORI este atribuit gratuit si termenul mediu de solutionare este de 5 zile, iar'
    claimed sources : ['posta-eori-prag', 'eori-structura']
@@ -53,4 +39,4 @@ Q: Ce inseamna EORI si cat costa obtinerea lui?
    
    IGNORAT (surse pe care modelul le-a invocat dar nu le-a folosit): posta-eori-prag
 ==============================================================================
-4 passed, 0 failed, out of 4
+3 passed, 1 failed, out of 4

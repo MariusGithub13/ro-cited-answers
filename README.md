@@ -112,6 +112,7 @@ python3 ask.py "Care este capitala Frantei?"      # refused, gate A
 
 python3 calibrate.py     # reproduce the overlap measurement
 python3 test_gates.py    # 4 cases: 2 must be refused, 2 must be answered
+                         # 27 Jul 2026: 4 of 4. 5 Oct 2026: 3 of 4, see 'Honest limitations'
 ```
 
 The model is pluggable on purpose, because the model is not the differentiator:
@@ -137,6 +138,34 @@ Nothing here is legal advice. The corpus is a demonstration fixture, and the
 `verificat` date on each document is the date it was last checked against the
 source, not a guarantee it is current.
 
+## eval/: the same questions with and without the gates (added 5 October 2026)
+
+`eval/` is a second, harder test, built from the original text of Romanian Law 544/2001 on access to
+public information (fetched from legislatie.just.ro; the 2001 original, not the consolidated law, so it
+tests grounding in the given text, never legal truth).
+
+It holds 12 question PAIRS, 24 items:
+
+- **answerable**: the article that holds the answer is in the context; the model must answer.
+- **abstain**: the same context with that one paragraph cut out; the only right reply is "NU REIESE DIN TEXT".
+
+The idea of pairing an answerable item with its evidence-removed twin comes from Aleph Alpha's Kolibri
+release (October 2026). `build_items.py` refuses to build a pair whose answer is missing from the
+answerable context or still present in the abstain one; on the first build it caught three such leaks.
+
+```bash
+cd eval
+python3 build_items.py                    # rebuild and check every pair
+python3 run_eval.py gemma2:2b             # bare model, OpenAI-compatible API (Ollama by default)
+python3 run_eval.py --gated gemma2:2b     # same items through gates B, C and D of ask.py
+python3 run_eval.py --base http://host:8000/v1 SomeModel   # any vLLM / OpenAI-compatible server
+```
+
+Scoring is mechanical: an abstain item counts only if the reply says "NU REIESE DIN TEXT", anything else
+is a hallucination; an answerable item counts if it matches the expected answer (`15 zile` never counts as
+`5 zile`). A failed call is reported as ERROR and counted as neither. Results land in `eval/results/`, one
+file per model and mode, and are published only after they have been read.
+
 ## Honest limitations
 
 - **Slow.** CPU-only inference on 4 shared cores runs at roughly 2 tokens/second.
@@ -148,6 +177,15 @@ source, not a guarantee it is current.
   which is the right direction here, but it is a real limitation and not a subtle
   one. Prefix matching is crude; it is deliberately the kind of crude that
   forgives morphology rather than meaning.
+- **The same weights can answer differently on the same machine.** On 27 July 2026 `test_gates.py` passed
+  4 of 4. On 5 October 2026 it passed 3 of 4, twice in a row (`test_run.log`). The failing case is the
+  legitimate parcel question: the model now answers it correctly and then appends an off-topic sentence about
+  EORI, and gate D refuses the whole answer. Nothing visible changed: same model file (gemma2:2b, digest
+  8ccf136fdd52), same Ollama binary (0.17.0), and the untouched July `ask.py` gives the identical refusal. Our
+  best guess, NOT proven: the CPU limits put on the Ollama service since July change how the arithmetic is
+  split across cores, and a 2B model at temperature 0 can then pick a different token. The system failed in
+  the safe direction (a refusal, not a wrong answer), and the test is left failing on purpose: editing the
+  expectation until it passes would be exactly the kind of green result this repository argues against.
 - **Small corpus.** Five documents. The overlap finding in particular should be
   re-measured on a larger corpus before anyone treats it as a general result.
 - **The refusal message is not an answer.** Refusing well is the point, but a

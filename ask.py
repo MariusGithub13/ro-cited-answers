@@ -201,6 +201,14 @@ def ask(question, verbose=True):
                       reason=f'cea mai buna potrivire {top[0][0]:.2f} < {MIN_SIM}')
         return _finish(record, REFUSAL, verbose)
 
+    return gated_answer(question, top, record, verbose)
+
+
+def gated_answer(question, top, record, verbose=True):
+    """Generation plus gates B, C, D on fragments that are already chosen.
+    ask() chooses them by retrieval (gate A); eval/ hands them over directly, so the
+    same gates can be measured on a fixed text (05.10.2026)."""
+    by_id = {d['id']: d for _, d in top}
     # ⭐Fragments are NUMBERED, not labelled with their string id. The 2B model
     # simply will not echo an id like "posta-returnare"; both legitimate test cases
     # produced a correct grounded answer and then signed it "SURSE: 1, 2", so a

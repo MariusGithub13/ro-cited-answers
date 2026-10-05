@@ -1,0 +1,160 @@
+{
+ "summary": {
+  "model": "gemma2:2b",
+  "mode": "bare",
+  "base": "http://localhost:11434/v1",
+  "run_at": "2026-10-05T09:26:58Z",
+  "items": 24,
+  "errors": 0,
+  "secs": 1236,
+  "answerable_correct": "12 of 12",
+  "abstain_correct": "8 of 12",
+  "hallucinations": 4
+ },
+ "rows": [
+  {
+   "id": "refuz-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Refuzul de a comunica informațiile solicitate se motiveaza și se comunică în termen de 5 zile de la primirea petitiilor. \n"
+  },
+  {
+   "id": "refuz-termen-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Refuzul de a comunica informațiile solicitate se motivează și se comunică în maximum 30 de zile, cu condiția înștiințării solicitantului în scris despre acest fapt în termen de 10 zile. \n"
+  },
+  {
+   "id": "presa-verbal-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Informațiile de interes public solicitate verbal de către presă sunt comunicate, de regula, imediat sau în cel mult 24 de ore. \n"
+  },
+  {
+   "id": "presa-verbal-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Informațiile de interes public solicitate verbal se comunică în cadrul unui program minim stabilit de conducerea autorităţii sau instituţiei publice, care va fi afişat la sediul acesteia şi se va desfăşura în mod obligatoriu în timpul funcţionarii instituţiei. \n"
+  },
+  {
+   "id": "acreditare-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Acreditarea se acordă la cerere, în termen de doua zile de la înregistrarea acesteia. \n"
+  },
+  {
+   "id": "acreditare-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "reclamatie-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "În termen de 30 de zile de la luarea la cunoştinţa de către persoana lezata. \n"
+  },
+  {
+   "id": "reclamatie-termen-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "În text, termenul de depunere a reclamației este de 15 zile de la depunerea reclamației. \n"
+  },
+  {
+   "id": "reclamatie-raspuns-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Răspunsul se transmite persoanei lezate în termen de 15 zile de la depunerea reclamației. \n"
+  },
+  {
+   "id": "reclamatie-raspuns-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "conferinte-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Autoritățile publice au obligația sa organizaza periodic, de regulă o dată pe luna, conferințe de presă. \n"
+  },
+  {
+   "id": "conferinte-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "copii-cost-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Solicitantul suportă costul serviciilor de copiere a documentelor. \n"
+  },
+  {
+   "id": "copii-cost-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "instanta-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Secția de contencios administrativ a tribunalului. \n"
+  },
+  {
+   "id": "instanta-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "timbru-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Nu, plângerea și apelul sunt scutiți de taxa de timbru. \n"
+  },
+  {
+   "id": "timbru-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "raport-mo-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Raportul periodic de activitate al autorităților publice este publicat în Partea a II-a a Monitorului Oficial al României. \n"
+  },
+  {
+   "id": "raport-mo-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  },
+  {
+   "id": "date-personale-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Informațiile cu privire la datele personale ale cetățenilor pot deveni informații de interes public numai în măsura în care afectează capacitatea de exercitare a unei funcții publice. \n"
+  },
+  {
+   "id": "date-personale-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Informațiile cu privire la datele personale ale cetățenilor pot deveni informații de interes public doar în cazuri de obligație legală sau acordul prealabil scris al persoanei respective. \n"
+  },
+  {
+   "id": "verbal-program-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "O zi pe săptămână. \n"
+  },
+  {
+   "id": "verbal-program-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT. \n"
+  }
+ ]
+}

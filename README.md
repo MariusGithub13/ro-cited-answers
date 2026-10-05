@@ -166,6 +166,31 @@ is a hallucination; an answerable item counts if it matches the expected answer 
 `5 zile`). A failed call is reported as ERROR and counted as neither. Results land in `eval/results/`, one
 file per model and mode, and are published only after they have been read.
 
+### First results, 5 October 2026 (gemma2:2b, local CPU, temperature 0)
+
+| | bare model | through gates B, C, D |
+|---|---|---|
+| answer present: correct | 12 of 12 | 12 of 12 |
+| answer removed: said "NU REIESE DIN TEXT" | 8 of 12 | 6 of 12 |
+| answer removed: invented an answer | 4 | 6 |
+
+Files: `eval/results/2026-10-05-bare-gemma2-2b.json`, `eval/results/2026-10-05-gated-gemma2-2b.json`, and
+`eval/results/gated-audit.jsonl` (every gate decision).
+
+**The gates caught none of the invented answers.** Gates B, C and D refused 0 of 24 items; every refusal in the
+gated run is the model's own "NU_STIU". The invented answers are built from real words and real numbers of the
+remaining text: asked for a deadline whose paragraph was cut, the model answers with a deadline from the
+neighbouring paragraph. Every number is in the source and every sentence overlaps it lexically, so gates that check
+"is this in the source" pass it. They cannot see "does this answer the question that was asked".
+
+Two caveats, stated so the numbers are not over-read. The gated mode also uses `ask.py`'s own prompt, which is
+worded differently from the bare prompt, so the 4 vs 6 difference mixes prompt and gates; what is clean is that the
+gates themselves fired on nothing. And 12 pairs on one model is a small sample.
+
+The first gated run on 5 October refused everything, correct answers included: a harness bug handed the two
+articles of each context to the gates as ONE fragment, so the model's honest "SURSE: 1, 2" read as an invented source.
+Fixed in `run_eval.py` (each article is now its own fragment); the numbers above are from the corrected run.
+
 ## Honest limitations
 
 - **Slow.** CPU-only inference on 4 shared cores runs at roughly 2 tokens/second.
@@ -186,6 +211,9 @@ file per model and mode, and are published only after they have been read.
   split across cores, and a 2B model at temperature 0 can then pick a different token. The system failed in
   the safe direction (a refusal, not a wrong answer), and the test is left failing on purpose: editing the
   expectation until it passes would be exactly the kind of green result this repository argues against.
+- **The gates check provenance, not relevance.** On the `eval/` test (5 October 2026) they let through every
+  invented answer, because each one was assembled from true words of the source. Catching that needs a check that
+  asks whether the sentence answers this question, not whether its words appear in the document.
 - **Small corpus.** Five documents. The overlap finding in particular should be
   re-measured on a larger corpus before anyone treats it as a general result.
 - **The refusal message is not an answer.** Refusing well is the point, but a

@@ -2,3 +2,5 @@
 __pycache__/
 eval/results/*
 !eval/results/2026-10-05-bare-gemma2-2b.json
+!eval/results/2026-10-05-gated-gemma2-2b.json
+!eval/results/gated-audit.jsonl

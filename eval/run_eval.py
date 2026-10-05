@@ -38,9 +38,16 @@ def ask_gated(model, item):
     import ask as gates
     gates.MODEL = model
     gates.AUDIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", "gated-audit.jsonl")  # never the demo's own audit log
-    doc = {"id": "1", "titlu": item["source"], "body": item["context"], "sursa": "legislatie.just.ro", "verificat": "05.10.2026"}
-    record = {"question": item["question"], "model": model, "retrieved": [{"id": "1", "sim": 1.0}], "eval_item": item["id"]}
-    record, text = gates.gated_answer(item["question"], [(1.0, doc)], record, verbose=False)
+    # The context holds TWO articles (the one asked about + a neighbour). Each goes in as its own fragment:
+    # handing both over as one fragment made the model's honest "SURSE: 1, 2" look like an invented source
+    # to gate B, and every answer was refused (harness bug found 05.10.2026, not a gate bug).
+    parts = [p for p in item["context"].split("\n\n") if p.strip()]
+    top = [(1.0, {"id": str(i), "titlu": p.split(" ", 2)[0] + " " + p.split(" ", 2)[1], "body": p,
+                  "sursa": "legislatie.just.ro, Legea 544/2001 (text original)", "verificat": "05.10.2026"})
+           for i, p in enumerate(parts, 1)]
+    record = {"question": item["question"], "model": model, "retrieved": [{"id": d["id"], "sim": 1.0} for _, d in top],
+              "eval_item": item["id"]}
+    record, text = gates.gated_answer(item["question"], top, record, verbose=False)
     if record["verdict"] != "ACCEPTAT":
         return "NU REIESE DIN TEXT (" + str(record.get("gate")) + ")"
     return text.split("\n\nSURSE:")[0]

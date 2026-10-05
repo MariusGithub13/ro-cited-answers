@@ -1,0 +1,160 @@
+{
+ "summary": {
+  "model": "gemma2:2b",
+  "mode": "gated",
+  "base": "http://localhost:11434/v1",
+  "run_at": "2026-10-05T10:23:09Z",
+  "items": 24,
+  "errors": 0,
+  "secs": 2212,
+  "answerable_correct": "12 of 12",
+  "abstain_correct": "6 of 12",
+  "hallucinations": 6
+ },
+ "rows": [
+  {
+   "id": "refuz-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Refuzul de a comunica informațiile solicitate se motiveaza și se comunică în termen de 5 zile de la primirea petitiilor."
+  },
+  {
+   "id": "refuz-termen-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "În cazul în care durata necesară pentru identificarea și difuzarea informatiei solicitate depășește 10 zile, răspunsul va fi comunicat solicitantului în maximum 30 zile.  \nInformația se motivează și se comunică în scris, cu condiția înștiințării solicitantului în termen de 10 zile. \nÎn cazul în care informațiile solicitate nu sunt disponibile pe loc, persoana este indrumată să solicite informația "
+  },
+  {
+   "id": "presa-verbal-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Informațiile de interes public solicitate verbal de către presa vor fi comunicate, de regula, imediat sau în cel mult 24 de ore."
+  },
+  {
+   "id": "presa-verbal-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Informațiile de interes public solicitate verbal sunt comunicate în cadrul unui program minim stabilit de conducerea autorităţii sau instituţiei publice, care va fi afişat la sediul acesteia și va desfășura-se în mod obligatoriu în timpul funcționarii instituției, incluzând și o zi pe săptămâna. \nProgramul este disponibil public, iar activitățile de registratura privind petitiile nu se pot include"
+  },
+  {
+   "id": "acreditare-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Acreditarea se acordă la cerere, în termen de doua zile de la înregistrarea acesteia."
+  },
+  {
+   "id": "acreditare-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "reclamatie-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "- Refuzul explicit sau tacit al angajatului desemnat al unei autorităţi ori instituţii publice pentru aplicarea prevederilor prezentei legi constituie abatere şi atrage răspunderea disciplinară a celui vinovat. \n- Împotriva refuzului prevăzut la alin. (1) se poate depune reclamație la conducătorul autorităţii sau al instituţiei publice respective în termen de 30 de zile de la luarea la cunoştinţa "
+  },
+  {
+   "id": "reclamatie-termen-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "- Reclamația se poate depune la conducătorul instituției în termen de 15 zile de la depunerea reclamației.\n- Refuzul explicit sau tacit al angajatului desemnat al unei autorități ori instituțiilor publice constituie abatere și atrage răspunderea disciplinară a celui vinovat.\n- Dacă după cercetarea administrativă reclamația se dovedește intemeiata, răspunsul se transmite persoanei lezate în termen "
+  },
+  {
+   "id": "reclamatie-raspuns-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Răspunsul se transmite persoanei lezate în termen de 15 zile de la depunerea reclamației."
+  },
+  {
+   "id": "reclamatie-raspuns-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "conferinte-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Autoritățile publice au obligația sa organizeze periodic, de regulă o dată pe luna, conferințe de presa pentru aducerea la cunoștința a informațiilor de interes public."
+  },
+  {
+   "id": "conferinte-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Conform fragmentelor, autoritățile publice sunt obligate sa răspundă la orice informații de interes public. \nÎn cadrul conferințelor de presă, autoritățile publice trebuie să răspundă la orice informație de interes public. \nAutoritățile publice au obligația sa desemneze un purtător de cuvânt din cadrul compartimentelor de informare și relații publice."
+  },
+  {
+   "id": "copii-cost-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Costul serviciilor de copiere a documentelor este suportat de solicitant, conform articolului 9 (1)."
+  },
+  {
+   "id": "copii-cost-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "instanta-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Persoanele vătămate în drepturi, prevăzute de această lege, pot face plângere la secția de contencios administrativ a tribunalului. \nPLÂNGERILE se fac în termen de 30 de zile de la data expirării termenului prevăzut la art. 7. (2) Instanța poate obliga autoritatea sau instituţia publică sa furnizeze informaţiile de interes public solicitate şi sa plătească daune morale şi/sau patrimoniale.\nInstanț"
+  },
+  {
+   "id": "instanta-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "timbru-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Plângerea și apelul sunt scutiți de taxa de timbru. \nNu_stui"
+  },
+  {
+   "id": "timbru-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "raport-mo-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Raportul periodic de activitate al autorităților publice este publicat în Partea a II-a a Monitorului Oficial al României."
+  },
+  {
+   "id": "raport-mo-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT (MODEL_ABSTAINED)"
+  },
+  {
+   "id": "date-personale-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Informațiile cu privire la datele personale ale cetățeanului pot deveni informații de interes public numai în măsura în care afectează capacitatea de exercitare a unei funcții publice. \nNu există o situație specifică, ci doar o condiție:  informațiile trebuie să afecteze capacitatea de exercitare a unei funcții publice.\nInformațiile de interes public nu pot fi transferate între autoritățile public"
+  },
+  {
+   "id": "date-personale-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Informațiile cu privire la datele personale ale cetățenilor pot deveni informații de interes public doar în cazul transferului lor între autorități publice, conform unei obligații legale sau cu acordul prealabil scris al persoanei care are acces la aceste informații.  \n \n Informațiile care favorizează sau ascund încălcarea legii de către o autoritate sau o instituție publică nu pot fi incluse în c"
+  },
+  {
+   "id": "verbal-program-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Programul de comunicare verbală include o zi pe săptămână, după programul de funcționare."
+  },
+  {
+   "id": "verbal-program-X",
+   "type": "abstain",
+   "state": "hallucination",
+   "reply": "Din fragmentele oferite, se poate deduce că intervalul dintre programul de funcționare și programul de comunicare verbală este de maximum 24 ore."
+  }
+ ]
+}

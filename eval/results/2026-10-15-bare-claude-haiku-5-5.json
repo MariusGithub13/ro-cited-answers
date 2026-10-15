@@ -1,0 +1,160 @@
+{
+ "summary": {
+  "model": "claude-haiku-5-5",
+  "mode": "bare",
+  "base": "anthropic message batches api, batch msgbatch_01RWHE6Y8C7dmKdUSRAAxw9b",
+  "run_at": "2026-10-15T11:47:50Z",
+  "items": 24,
+  "errors": 0,
+  "secs": 423,
+  "answerable_correct": "11 of 12",
+  "abstain_correct": "12 of 12",
+  "hallucinations": 0
+ },
+ "rows": [
+  {
+   "id": "refuz-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Refuzul comunicării informațiilor solicitate se motivează și se comunică în termen de 5 zile de la primirea petițiilor."
+  },
+  {
+   "id": "refuz-termen-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT"
+  },
+  {
+   "id": "presa-verbal-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "De regulă, imediat sau în cel mult 24 de ore."
+  },
+  {
+   "id": "presa-verbal-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "acreditare-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Acreditarea se acordă în termen de două zile de la înregistrarea cererii."
+  },
+  {
+   "id": "acreditare-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "reclamatie-termen-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Reclamația se poate depune în termen de 30 de zile de la luarea la cunoștință de către persoana lezată."
+  },
+  {
+   "id": "reclamatie-termen-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "reclamatie-raspuns-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Răspunsul se transmite persoanei lezate în termen de 15 zile de la depunerea reclamației."
+  },
+  {
+   "id": "reclamatie-raspuns-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "conferinte-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "De regulă, o dată pe lună, conform articolului 17 alineatul (1)."
+  },
+  {
+   "id": "conferinte-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "copii-cost-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Costul serviciilor de copiere este suportat de solicitant, în condițiile legii."
+  },
+  {
+   "id": "copii-cost-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "instanta-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Plângerea se face la secția de contencios administrativ a tribunalului în a cărei rază teritorială domiciliază persoana vătămată sau în a cărei rază teritorială se află sediul autorității ori al instituției publice."
+  },
+  {
+   "id": "instanta-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "timbru-A",
+   "type": "answerable",
+   "state": "wrong_abstained",
+   "reply": "NU REIESE DIN TEXT.Nu, plângerea și apelul sunt scutite de taxa de timbru, conform articolului 22 alineatul (5)."
+  },
+  {
+   "id": "timbru-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "raport-mo-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Raportul periodic de activitate se publică în Monitorul Oficial al României, Partea a II-a."
+  },
+  {
+   "id": "raport-mo-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "date-personale-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Informațiile cu privire la datele personale ale cetățeanului pot deveni informații de interes public numai în măsura în care afectează capacitatea de exercitare a unei funcții publice."
+  },
+  {
+   "id": "date-personale-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  },
+  {
+   "id": "verbal-program-A",
+   "type": "answerable",
+   "state": "correct",
+   "reply": "Programul minim pentru informațiile solicitate verbal trebuie să includă o zi pe săptămână, după programul de funcționare."
+  },
+  {
+   "id": "verbal-program-X",
+   "type": "abstain",
+   "state": "correct",
+   "reply": "NU REIESE DIN TEXT."
+  }
+ ]
+}

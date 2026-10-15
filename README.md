@@ -215,6 +215,43 @@ The first gated run on 5 October refused everything, correct answers included: a
 articles of each context to the gates as ONE fragment, so the model's honest "SURSE: 1, 2" read as an invented source.
 Fixed in `run_eval.py` (each article is now its own fragment); the numbers above are from the corrected run.
 
+### Who does what: the relations set, 15 October 2026 (gemma2:2b, local CPU)
+
+The pairs above ask whether a model invents an answer when the evidence is gone. This set asks a narrower question:
+when the deadline is right, is it attached to the right PARTY and the right ACTION? `eval/build_relations.py` builds 14
+groups from Legea 544/2001, Legea 190/2018 and OSGG 600/2018, each on ONE fixed passage of the original text, with three
+proposed answers:
+
+- **valid**: a paraphrase that keeps who, what and the deadline;
+- **wrong actor**: the same deadline and action, given to another party named in the law;
+- **wrong action**: the same party and deadline, attached to another action.
+
+Holding the passage fixed means retrieval plays no part: the only thing that changes inside a group is the relation.
+The model sees the passage, the question and one proposed answer, and must reply `VERDICT: ACCEPT` or `VERDICT: RESPINS`.
+Two rates, each over its own denominator, because one number would hide a checker that refuses everything:
+
+| | wrong answers accepted | of which wrong actor | of which wrong action | correct answers refused |
+|---|---|---|---|---|
+| gates C and D alone, no model | 28 of 28 | 14 of 14 | 14 of 14 | 6 of 14 |
+| gemma2:2b, bare | 8 of 28 | 6 of 14 | 2 of 14 | 10 of 14 |
+| gemma2:2b + gates C and D | 8 of 28 | 6 of 14 | 2 of 14 | 10 of 14 |
+
+Files: `eval/results/2026-10-15-relations-gates-only-gates-only.json`, `eval/results/2026-10-15-relations-bare-gemma2-2b.json`,
+`eval/results/2026-10-15-relations-gated-gemma2-2b.json` (every reply in full). No reply was unparsable (0 errors).
+
+What the numbers say, and no more:
+
+- **The gates cannot see a relation.** Alone they accepted every one of the 28 wrong answers. A wrong-actor answer
+  reuses the words and the number of its passage, so "is this in the source" is always yes.
+- **Adding the gates changed no verdict.** All 42 decisions are identical with and without them. The six correct answers
+  the gates refuse (a paraphrase that drifts lexically, gate D) are six the model had already refused.
+- **The model is a strict checker, not a good one.** It accepted 8 of 28 wrong answers, more often when the party was
+  wrong (6 of 14) than when the action was (2 of 14), and it refused 10 of the 14 correct ones. A low wrong-acceptance
+  rate bought with a high refusal rate is mostly refusal.
+- **Small and narrow.** 14 groups, one 2B model, one run. Three of the valid paraphrases were corrected before the run
+  because they changed the meaning of the law text (the diff is in the same commit); every passage is checked verbatim
+  against its source file on each build.
+
 ## Honest limitations
 
 - **Slow.** CPU-only inference on 4 shared cores runs at roughly 2 tokens/second.

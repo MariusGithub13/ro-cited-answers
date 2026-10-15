@@ -1,0 +1,417 @@
+{
+ "summary": {
+  "model": "gemma2:2b",
+  "mode": "gated",
+  "base": "http://localhost:11434/v1",
+  "set": "items_relations.jsonl",
+  "run_at": "2026-10-15T23:03:49Z",
+  "items": 42,
+  "groups": 14,
+  "secs": 1457,
+  "wrong_accepted_combined": {
+   "count": 8,
+   "of": 28,
+   "text": "8 of 28",
+   "rate": 0.2857
+  },
+  "wrong_accepted_wrong_actor": {
+   "count": 6,
+   "of": 14,
+   "text": "6 of 14",
+   "rate": 0.4286
+  },
+  "wrong_accepted_wrong_action": {
+   "count": 2,
+   "of": 14,
+   "text": "2 of 14",
+   "rate": 0.1429
+  },
+  "valid_refused": {
+   "count": 10,
+   "of": 14,
+   "text": "10 of 14",
+   "rate": 0.7143
+  },
+  "errors": 0
+ },
+ "rows": [
+  {
+   "id": "refuz-5-zile--valid",
+   "group": "refuz-5-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nÎn text, autoritatea care nu oferă informații este **obligată** să motiveze și să comunice refuzul de a da informațiile solicitate în termen de **5 zile**. \nRăspunsul propus spune că autoritatea are **5 zile de la primirea cererii** ca să explice refuzul, dar nu specifică ce este motivul pentru care trebuie să facă acest lucru. \n"
+  },
+  {
+   "id": "refuz-5-zile--wrong_actor",
+   "group": "refuz-5-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎntrebare: **Cine trebuie să motiveze și să comunice refuzul de a da informațiile solicitate, și în ce termen?**\n\nRăspuns propus: **Persoana care a cerut informațiile are 5 zile de la primirea petiției ca să motiveze și să comunice contestarea refuzului.**\n\n**Comentariu:** Răspunsul propus spune că persoana care a cerut informațiile are 5 zile de la primirea petiției ca să motivez"
+  },
+  {
+   "id": "refuz-5-zile--wrong_action",
+   "group": "refuz-5-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nAutoritatea trebuie să motiveze și să comunice refuzul de a da informațiile solicitate, și în ce termen este specificat **în text**: **5 zile de la primirea petitiilor**. \n"
+  },
+  {
+   "id": "raspuns-10-30-zile--valid",
+   "group": "raspuns-10-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nÎn text se menționează că **Autoritățile și instituțiile publice** trebuie să răspundă la solicitarea de informații de interes public.  Răspunsul propus spune că este **Instituția** care a cerut informația, dar nu precizează ce tip de instituție (autoritate, instituție publică etc.) \n"
+  },
+  {
+   "id": "raspuns-10-30-zile--wrong_actor",
+   "group": "raspuns-10-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎn text se precizează că **Autoritățile și instituțiile publice** au obligația de a răspunde la solicitările de informații de interes public, iar termenul este definit în funcție de complexitate, volumul lucrărilor documentare și urgența solicitării. \n\n\n"
+  },
+  {
+   "id": "raspuns-10-30-zile--wrong_action",
+   "group": "raspuns-10-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nAutoritățile și instituțiile publice au obligația sa răspundă în scris la solicitarea informaţiilor de interes public, **în termen de 10 zile sau, după caz, în cel mult 30 de zile de la înregistrarea solicitării**, în funcție de dificultatea, complexitatea, volumul lucrărilor documentare și de urgenta solicitării. \n"
+  },
+  {
+   "id": "presa-verbal-24-ore--valid",
+   "group": "presa-verbal-24-ore",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nÎntrebare: Cine comunică informațiile de interes public cerute verbal de presă, și în cât timp?\n\nRăspuns propus: Când ziariștii cer oral informații de interes public, instituția le dă, de obicei, pe loc ori cel târziu în 24 de ore.\n\n\n**Comentariu:** Răspunsul propus spune că instituția le-a dat informațiile \"pe loc\" sau \"în cel mult 24 de ore\", ceea ce este **incorect**. Textul sp"
+  },
+  {
+   "id": "presa-verbal-24-ore--wrong_actor",
+   "group": "presa-verbal-24-ore",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎntrebarea spune că informațiile sunt comunicate de către \"mijloacele de informare în masă\". Textul menționează că informațiile vor fi comunicate de către instituție. \n"
+  },
+  {
+   "id": "presa-verbal-24-ore--wrong_action",
+   "group": "presa-verbal-24-ore",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nAutoritatea acționează, de regulă imediat sau în cel mult 24 de ore, mijloacele de informare în masă care au cerut verbal informații de interes public. \n"
+  },
+  {
+   "id": "acreditare-2-zile--valid",
+   "group": "acreditare-2-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "VERDICT: ACCEPT\nAutoritățile publice acordă acreditarea ziariștilor **la cerere**, în **doua zile** de la momentul înregistrării cererii. \n"
+  },
+  {
+   "id": "acreditare-2-zile--wrong_actor",
+   "group": "acreditare-2-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nAutorităţile publice acordă acreditarea ziariștilor la cerere, și în termen de doua zile de la înregistrarea acesteia. \n"
+  },
+  {
+   "id": "acreditare-2-zile--wrong_action",
+   "group": "acreditare-2-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\n \nÎntrebare:  Cine acordă acreditarea ziariștilor la cerere, și în ce termen?\n\nRăspuns propus: Autoritățile publice retrag acreditarea ziariștilor, fără discriminare, în termen de două zile de la înregistrarea cererii. \n\n\n**Explicație:** Răspunsul propus este greșit deoarece nu menționează clar cine acordă acreditarea (autoritățile publice) și ce termen se aplică. Textul specifică"
+  },
+  {
+   "id": "reclamatie-30-zile--valid",
+   "group": "reclamatie-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nÎntrebare:  Cine poate depune reclamație împotriva refuzului angajatului desemnat, și în ce termen?\n\nRăspuns propus: Persoana nemulțumită de refuz se poate plânge șefului instituției în 30 de zile din momentul în care a aflat de refuz.\n\n\n**Comentariu:** Răspunsul propus spune că persoana nemulțumită de refuz **se poate plânge șefului instituției**, dar nu specifică **cine este ang"
+  },
+  {
+   "id": "reclamatie-30-zile--wrong_actor",
+   "group": "reclamatie-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nÎntrebarea corectă este: **Cine poate depune reclamație împotriva refuzului angajatului desemnat, și în ce termen?**\n\nRăspunsul propus este corect. \n"
+  },
+  {
+   "id": "reclamatie-30-zile--wrong_action",
+   "group": "reclamatie-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎntrebare: **Cine poate depune reclamație împotriva refuzului angajatului desemnat, și în ce termen?**\n\nRăspuns propus: Persoana lezată are 30 de zile de la luarea la cunoștință a refuzului ca să solicite din nou informațiile angajatului desemnat.\n\n\n**Comentariu:** Răspunsul propus este **RESPINS**, deoarece textul specifică că reclamația se poate depune **la conducătorul autorită"
+  },
+  {
+   "id": "reclamatie-15-zile--valid",
+   "group": "reclamatie-15-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nÎn text, termenul de 15 zile se referă la **responsabilitatea instituției publice** care are obligația de a transmite informații și sancțiuni persoanei lezate în termen de 15 zile **după depunerea reclamației**. \n"
+  },
+  {
+   "id": "reclamatie-15-zile--wrong_actor",
+   "group": "reclamatie-15-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎn text, termenul de 15 zile se referă la **depunerea reclamației** la conducătorul instituției, iar responsabilitatea de a face acest lucru este a **persoanei lezată**.  \n"
+  },
+  {
+   "id": "reclamatie-15-zile--wrong_action",
+   "group": "reclamatie-15-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎntrebarea corectă este: **Cui revine termenul de 15 zile din text, și ce trebuie făcut în el?**\n\nRăspunsul propus este incorect deoarece termenul de 15 zile se referă la răspunsul instituției publice.  \n"
+  },
+  {
+   "id": "plangere-30-zile--valid",
+   "group": "plangere-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "VERDICT: ACCEPT\nRĂSPUNS:  Persoanele care se simt vătămate în drepturile din această lege pot face plângere la secția de contencios administrativ a tribunalului, în termen de 30 de zile de la expirarea termenului prevăzut la art. 7. \n"
+  },
+  {
+   "id": "plangere-30-zile--wrong_actor",
+   "group": "plangere-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎn text, este menționat că **o persoană** poate face plângere la secția de contencios administrativ a tribunalului.  Răspunsul propus spune că autoritatea sau instituția publică face plângere. \n"
+  },
+  {
+   "id": "plangere-30-zile--wrong_action",
+   "group": "plangere-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nÎn text, se precizează că **persoana vătămată** poate face plângere la secția de contencios administrativ a tribunalului.  Răspunsul propus menționează \"Persoana lezată\" care face recurs împotriva hotărârii tribunalului. \n"
+  },
+  {
+   "id": "conferinte-lunar--valid",
+   "group": "conferinte-lunar",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nInstituțiile statului sunt obligate ca, în mod obișnuit, în fiecare lună să țină întâlniri cu presa în care să facă cunoscute informații de interes public. \n"
+  },
+  {
+   "id": "conferinte-lunar--wrong_actor",
+   "group": "conferinte-lunar",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nOrganizarea conferințelor de presă pentru informații de interes public este responsabilitatea **Autorităților publice**.  Conform textului, acestea organizează conferințele de presă **de regula o dată pe lună** pentru a aduce la cunoștință informațiile de interes public. \n"
+  },
+  {
+   "id": "conferinte-lunar--wrong_action",
+   "group": "conferinte-lunar",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\n \nAutoritățile publice organizează conferințele de presă pentru informațiile de interes public, **de regula o dată pe lună**. \n"
+  },
+  {
+   "id": "copii-cost--valid",
+   "group": "copii-cost",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\n \nCostul serviciilor de copiere a documentelor este suportat de **solicitant**, conform textului. \n"
+  },
+  {
+   "id": "copii-cost--wrong_actor",
+   "group": "copii-cost",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nCostul serviciilor de copiere a documentelor este suportat de **solicitant**, în condiţiile legii. \n"
+  },
+  {
+   "id": "copii-cost--wrong_action",
+   "group": "copii-cost",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nCostul serviciilor de copiere a documentelor este suportat de **solicitant**, în condiţiile legii. \n"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--valid",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\nAutoritatea națională de supraveghere poate relua controlul, dar termenul este **în cel mult 10 zile de la data expirării termenului de remediere**. \n"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--wrong_actor",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nÎn text se precizează că **Autoritatea națională de supraveghere** are dreptul de a relua controlul, iar termenul este de **10 zile de la data expirării termenului de remediere**. \n"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--wrong_action",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nAutoritatea națională de supraveghere poate relua controlul, dar termenul este **10 zile de la data expirării termenului de remediere**. \n"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--valid",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\n \nÎntrebare:  Cine încheie procesul-verbal când o autoritate publică încalcă regulile privind datele personale, și ce sancțiune se aplică?\n\nRăspuns propus: Dacă o instituție publică încalcă regulile privind datele personale, autoritatea de control consemnează fapta într-un act, o avertizează și atașează un plan de remediere. \n\n\n**Comentariu:** Răspunsul propus spune că autoritatea"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--wrong_actor",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\n \nÎn text se menționează clar că **Autoritatea națională de supraveghere** încheie procesul-verbal de constatare și sancționare a contravenției.  Răspunsul propus spune că autoritatea publică încheie procesul-verbal, dar nu specifică ce sancțiune se aplică. \n"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--wrong_action",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\n \nÎn text, se menționează că autoritatea națională de supraveghere **încheie** procesul-verbal pentru a aplica **sancțiunea avertismentului** și **plan de remediere**.  Răspunsul propus spune că autoritatea aplică sancțiunea amenzii contravenționale. \n"
+  },
+  {
+   "id": "scim-raport-20-februarie--valid",
+   "group": "scim-raport-20-februarie",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "VERDICT: ACCEPT\nInstituțiile publice care sunt ordonator principal de credite al bugetului de stat, al bugetului asigurărilor sociale de stat sau al unui fond special transmit anual la DCIMRI Raportul asupra sistemului de control intern managerial la data de 31 decembrie prevăzut la alin. (1) , până la 20 februarie a anului următor. \n"
+  },
+  {
+   "id": "scim-raport-20-februarie--wrong_actor",
+   "group": "scim-raport-20-februarie",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\nRaportul este transmis de **Instituțiile publice** la DCIMRI, și până la **20 februarie a anului următor**. \n"
+  },
+  {
+   "id": "scim-raport-20-februarie--wrong_action",
+   "group": "scim-raport-20-februarie",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nInstituțiile publice în care se exercită funcția de ordonator principal de credite al bugetului de stat, al bugetului asigurărilor sociale de stat sau al bugetului oricărui fond special transmit anual la DCIMRI, din cadrul Secretariatului General al Guvernului, Raportul asupra sistemului de control intern managerial la data de 31 decembrie prevăzut la alin. (1) , până la 20 februar"
+  },
+  {
+   "id": "scim-raport-elaborare--valid",
+   "group": "scim-raport-elaborare",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "VERDICT: ACCEPT\nÎntrebare: **Cine elaborează anual raportul asupra sistemului de control intern managerial, și cui se prezintă?**\nRăspuns propus: **În fiecare an, șeful entității publice întocmește raportul privind situația controlului intern managerial la 31 decembrie și îl înaintează structurii situate deasupra lui în ierarhie.**\n\n**Comentariu:** Răspunsul este corect. Textul specifică că \"Condu"
+  },
+  {
+   "id": "scim-raport-elaborare--wrong_actor",
+   "group": "scim-raport-elaborare",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nStructura ierarhic superioară elaborează anual Raportul asupra sistemului de control intern managerial la data de 31 decembrie, care se prezintă conducătorului fiecărei entități publice. \n"
+  },
+  {
+   "id": "scim-raport-elaborare--wrong_action",
+   "group": "scim-raport-elaborare",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\nRaportul asupra sistemului de control intern managerial este elaborat de **Conducătorul fiecărei entități publice** și se prezintă structurii ierarhic superioare. \n"
+  },
+  {
+   "id": "scim-profil-risc--valid",
+   "group": "scim-profil-risc",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "VERDICT: RESPINS\n \nÎNTREBAREA:  Cine stabilește anual profilul de risc și limita de toleranță la risc, și cine le aprobă?\n\nRĂSPUNS PROPUS: Comisia stabilește în fiecare an profilul și pragul de toleranță pentru riscurile importante, iar conducerea entității le validează. \n \n**Comentariu:** Răspunsul propus spune că Comisia stabilește profilul de risc și limita de toleranță la risc, dar **conducere"
+  },
+  {
+   "id": "scim-profil-risc--wrong_actor",
+   "group": "scim-profil-risc",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "VERDICT: ACCEPT\n \nÎntrebarea este corectă, răspunsul propus spune corect cine stabilește anual profilul de risc și limita de toleranță la risc și cine le aprobă. \n"
+  },
+  {
+   "id": "scim-profil-risc--wrong_action",
+   "group": "scim-profil-risc",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "reject",
+   "correct": true,
+   "reply": "VERDICT: RESPINS\n \nÎntrebare: Cine stabilește anual profilul de risc și limita de toleranță la risc, și cine le aprobă?\n\nRăspuns propus: Comisia de monitorizare execută anual măsurile de control pentru riscurile semnificative ale entității publice, aprobate de către conducerea entității. \n\n\n**Comentariu:** Răspunsul propus spune că Comisia de monitorizare stabilește și aprobă măsurale de control p"
+  }
+ ]
+}

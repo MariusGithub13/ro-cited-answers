@@ -1,0 +1,417 @@
+{
+ "summary": {
+  "model": "gates-only",
+  "mode": "gates-only",
+  "base": "http://localhost:11434/v1",
+  "set": "items_relations.jsonl",
+  "run_at": "2026-10-15T22:10:46Z",
+  "items": 42,
+  "groups": 14,
+  "secs": 0,
+  "wrong_accepted_combined": {
+   "count": 28,
+   "of": 28,
+   "text": "28 of 28",
+   "rate": 1.0
+  },
+  "wrong_accepted_wrong_actor": {
+   "count": 14,
+   "of": 14,
+   "text": "14 of 14",
+   "rate": 1.0
+  },
+  "wrong_accepted_wrong_action": {
+   "count": 14,
+   "of": 14,
+   "text": "14 of 14",
+   "rate": 1.0
+  },
+  "valid_refused": {
+   "count": 6,
+   "of": 14,
+   "text": "6 of 14",
+   "rate": 0.4286
+  },
+  "errors": 0
+ },
+ "rows": [
+  {
+   "id": "refuz-5-zile--valid",
+   "group": "refuz-5-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "refuz-5-zile--wrong_actor",
+   "group": "refuz-5-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "refuz-5-zile--wrong_action",
+   "group": "refuz-5-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "raspuns-10-30-zile--valid",
+   "group": "raspuns-10-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "raspuns-10-30-zile--wrong_actor",
+   "group": "raspuns-10-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "raspuns-10-30-zile--wrong_action",
+   "group": "raspuns-10-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "presa-verbal-24-ore--valid",
+   "group": "presa-verbal-24-ore",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "presa-verbal-24-ore--wrong_actor",
+   "group": "presa-verbal-24-ore",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "presa-verbal-24-ore--wrong_action",
+   "group": "presa-verbal-24-ore",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "acreditare-2-zile--valid",
+   "group": "acreditare-2-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "acreditare-2-zile--wrong_actor",
+   "group": "acreditare-2-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "acreditare-2-zile--wrong_action",
+   "group": "acreditare-2-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "reclamatie-30-zile--valid",
+   "group": "reclamatie-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "reclamatie-30-zile--wrong_actor",
+   "group": "reclamatie-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "reclamatie-30-zile--wrong_action",
+   "group": "reclamatie-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "reclamatie-15-zile--valid",
+   "group": "reclamatie-15-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "reclamatie-15-zile--wrong_actor",
+   "group": "reclamatie-15-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "reclamatie-15-zile--wrong_action",
+   "group": "reclamatie-15-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "plangere-30-zile--valid",
+   "group": "plangere-30-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "plangere-30-zile--wrong_actor",
+   "group": "plangere-30-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "plangere-30-zile--wrong_action",
+   "group": "plangere-30-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "conferinte-lunar--valid",
+   "group": "conferinte-lunar",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "conferinte-lunar--wrong_actor",
+   "group": "conferinte-lunar",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "conferinte-lunar--wrong_action",
+   "group": "conferinte-lunar",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "copii-cost--valid",
+   "group": "copii-cost",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "copii-cost--wrong_actor",
+   "group": "copii-cost",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "copii-cost--wrong_action",
+   "group": "copii-cost",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--valid",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--wrong_actor",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "gdpr-reluare-control-10-zile--wrong_action",
+   "group": "gdpr-reluare-control-10-zile",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--valid",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "reject",
+   "correct": false,
+   "reply": "REFUZAT D_GROUNDING"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--wrong_actor",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "gdpr-proces-verbal-avertisment--wrong_action",
+   "group": "gdpr-proces-verbal-avertisment",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-20-februarie--valid",
+   "group": "scim-raport-20-februarie",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-20-februarie--wrong_actor",
+   "group": "scim-raport-20-februarie",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-20-februarie--wrong_action",
+   "group": "scim-raport-20-februarie",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-elaborare--valid",
+   "group": "scim-raport-elaborare",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-elaborare--wrong_actor",
+   "group": "scim-raport-elaborare",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-raport-elaborare--wrong_action",
+   "group": "scim-raport-elaborare",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-profil-risc--valid",
+   "group": "scim-profil-risc",
+   "variant": "valid",
+   "expected": "accept",
+   "decision": "accept",
+   "correct": true,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-profil-risc--wrong_actor",
+   "group": "scim-profil-risc",
+   "variant": "wrong_actor",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  },
+  {
+   "id": "scim-profil-risc--wrong_action",
+   "group": "scim-profil-risc",
+   "variant": "wrong_action",
+   "expected": "reject",
+   "decision": "accept",
+   "correct": false,
+   "reply": "ACCEPTAT"
+  }
+ ]
+}

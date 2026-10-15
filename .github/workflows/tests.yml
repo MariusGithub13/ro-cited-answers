@@ -1,0 +1,24 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Gates B, C and D on canned model output (no Ollama)
+        run: python3 test_gates_offline.py
+      - name: Rebuild the eval items and check they match the committed file
+        run: cd eval && python3 build_items.py && git diff --exit-code items.jsonl
+      - name: The two entry points print their usage
+        run: |
+          python3 ask.py 2>&1 | grep -q folosire
+          python3 eval/run_eval.py | grep -q "run_eval.py MODEL"
+      - name: Everything compiles
+        run: python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py eval/run_eval.py eval/build_items.py

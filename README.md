@@ -101,7 +101,8 @@ the documents that actually carried a sentence. Padding is stripped and logged.
 
 ## Running it
 
-Requires [Ollama](https://ollama.com) with a chat model and an embedding model.
+Requires [Ollama](https://ollama.com) with a chat model and an embedding model, and Python 3.11 or newer
+(`ask.py` uses `datetime.UTC`; checked with 3.13). No other Python packages.
 
 ```bash
 ollama pull gemma2:2b
@@ -113,7 +114,12 @@ python3 ask.py "Care este capitala Frantei?"      # refused, gate A
 python3 calibrate.py     # reproduce the overlap measurement
 python3 test_gates.py    # 4 cases: 2 must be refused, 2 must be answered
                          # 27 Jul 2026: 4 of 4. 5 Oct 2026: 3 of 4, see 'Honest limitations'
+python3 test_gates_offline.py   # gates B, C, D on canned model output; no Ollama; this is what CI runs
 ```
+
+If Ollama is not running on `127.0.0.1:11434`, every script above except `test_gates_offline.py` stops with a
+`Connection refused` traceback. What ran and what did not on 15 October 2026, on a machine without Ollama,
+is in [docs/README-PROOF-2026-10-15.md](docs/README-PROOF-2026-10-15.md).
 
 The model is pluggable on purpose, because the model is not the differentiator:
 
@@ -178,7 +184,8 @@ Files: `eval/results/2026-10-05-bare-gemma2-2b.json`, `eval/results/2026-10-05-g
 `eval/results/gated-audit.jsonl` (every gate decision).
 
 **The gates caught none of the invented answers.** Gates B, C and D refused 0 of 24 items; every refusal in the
-gated run is the model's own "NU_STIU". The invented answers are built from real words and real numbers of the
+gated run is the model's own "NU_STIU" (`eval/results/gated-audit.jsonl`: 18 accepted, 6 abstained, 0 refused by a
+gate). This is the limitation named below as provenance, not relevance. The invented answers are built from real words and real numbers of the
 remaining text: asked for a deadline whose paragraph was cut, the model answers with a deadline from the
 neighbouring paragraph. Every number is in the source and every sentence overlaps it lexically, so gates that check
 "is this in the source" pass it. They cannot see "does this answer the question that was asked".

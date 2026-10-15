@@ -183,6 +183,23 @@ file per model and mode, and are published only after they have been read.
 Files: `eval/results/2026-10-05-bare-gemma2-2b.json`, `eval/results/2026-10-05-gated-gemma2-2b.json`, and
 `eval/results/gated-audit.jsonl` (every gate decision).
 
+### Hosted models, 15 October 2026 (bare, through a batch API, effort low)
+
+The same 24 items, the same system prompt and the same mechanical scoring (`eval/run_claude_batch.py` imports them from
+`run_eval.py`), sent in one batch to four hosted models. Bare only: the gates run on the local model and were not re-implemented
+for these.
+
+| model | answer present: correct | answer removed: said "NU REIESE DIN TEXT" | answer removed: invented |
+|---|---|---|---|
+| claude-haiku-5-5 | 11 of 12 | 12 of 12 | 0 |
+| claude-sonnet-5-5 | 12 of 12 | 12 of 12 | 0 |
+| claude-opus-5-5 | 12 of 12 | 12 of 12 | 0 |
+| claude-fable-5-1 | 12 of 12 | 12 of 12 | 0 |
+
+Files: `eval/results/2026-10-15-bare-claude-*.json`. On these twelve pairs the hosted models abstain every time the
+evidence is removed; the 2B local model invented four answers. Twelve pairs is a small set, and the point of the project is
+what runs on an institution's own machine, so this row is a reference line, not the result.
+
 **The gates caught none of the invented answers.** Gates B, C and D refused 0 of 24 items; every refusal in the
 gated run is the model's own "NU_STIU" (`eval/results/gated-audit.jsonl`: 18 accepted, 6 abstained, 0 refused by a
 gate). This is the limitation named below as provenance, not relevance. The invented answers are built from real words and real numbers of the

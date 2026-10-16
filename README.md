@@ -202,6 +202,31 @@ What is new for this repository on or after 5 October 2026: the hosted backend,
 the per-model gate A calibration, the live page and API (`web/`), the Dockerfile,
 `deploy/` and `.gitlab-ci.yml`. The gates and the corpus predate it.
 
+## The agents after the code (GitLab Duo, added 16 October 2026)
+
+The pipeline proves a change; the agents run the work around it. Five custom Duo flows, one per part of the
+lifecycle, each with its own service account, all bound by [AGENTS.md](AGENTS.md): never lower a gate to get more
+answers, never answer without a citation, agents open merge requests but never push to `main`, merge or deploy.
+
+| Flow | Starts when | What it does |
+|---|---|---|
+| `rca-plan` | an issue is created, or it is mentioned | reads the code it concerns and posts a scoped plan: files, whether a gate or the corpus changes (then calibration and the eval must be re-run), tests, stages, risk |
+| `rca-review` | it is set as reviewer, or a merge request is marked ready | gate-aware review: can this change make the system answer something it used to refuse? |
+| `rca-fix` | a pipeline fails (not a scheduled one) | reads the failing jobs, opens a fix merge request on `duo-fix/<pipeline>`; never touches a threshold to make a test pass |
+| `rca-secure` | it is assigned or mentioned on an issue | triages SAST, secret and container findings by reachability in this code; dismisses nothing itself |
+| `rca-release` | a pipeline on `main` passes or fails | after a deploy: commits, scan results, and its own check of the live service (when its sandbox allows it), posted to the Production log issue; a failed promote or monitor run becomes an incident issue |
+
+The flows are code: [`.gitlab/duo/flows/`](.gitlab/duo/flows) holds the YAML, [`flows.json`](.gitlab/duo/flows.json)
+their triggers and conditions, and [`deploy/duo_sync.py`](deploy/duo_sync.py) applies them through the GitLab API
+(unchanged flows are skipped; a changed one becomes a new released version). Per-path review rules live in
+[`.gitlab/duo/mr-review-instructions.yaml`](.gitlab/duo/mr-review-instructions.yaml). The flow sandbox may reach only the
+two production hostnames ([`.gitlab/duo/agent-config.yml`](.gitlab/duo/agent-config.yml)).
+
+What the first runs did: `rca-plan` turned issue #1 into a plan in about two minutes without being asked; `rca-release`
+started one second after the v3 deploy passed, wrote the release summary, and reported that it could NOT reach production
+from its sandbox (the proxy answered 403 to CONNECT: the sandbox blocks outbound traffic by default, and the allowlist above
+was added after that run, because of it) instead of claiming it had. That second behaviour is the one this project is about.
+
 ## The corpus
 
 Five documents on Romanian customs and EORI procedure, drawn from public

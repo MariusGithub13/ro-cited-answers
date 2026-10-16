@@ -1,0 +1,7 @@
+# Execution settings for Duo flows on this project (read from the default branch).
+# The flow sandbox blocks outbound traffic by default. The release/monitor flow must reach the live
+# service to check /health and a nonsense path, so exactly the two production hostnames are allowed.
+network_policy:
+  allowed_domains:
+    - ro-cited-igpska5k6a-lz.a.run.app
+    - ro-cited-210002791432.europe-north1.run.app

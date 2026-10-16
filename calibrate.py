@@ -70,6 +70,15 @@ def main():
         print(f'legitimate question ({lo_hit:.3f}) so it only catches the truly')
         print('far-out cases, and let gates B and C carry the real weight.')
         print(f'Suggested MIN_SIM = {lo_hit - 0.02:.2f} (keeps every real question alive)')
+    rec_val = round((lo_hit + hi_miss) / 2, 3) if lo_hit > hi_miss else round(lo_hit - 0.02, 3)
+    if '--write' in sys.argv:
+        # gate_a.json holds one threshold per embedding model; ask.py reads it.
+        import json, os
+        path = os.path.join(ask.BASE, 'gate_a.json')
+        data = json.load(open(path)) if os.path.exists(path) else {}
+        data[ask.EMBED] = rec_val
+        json.dump(data, open(path, 'w'), indent=1, sort_keys=True)
+        print(f'wrote MIN_SIM {rec_val} for {ask.EMBED} to gate_a.json')
     print(f'\n(mean hit {statistics.mean(s for _, s in hits):.3f}, '
           f'mean miss {statistics.mean(s for _, s in miss):.3f})')
 

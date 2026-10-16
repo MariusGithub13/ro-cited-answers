@@ -50,8 +50,23 @@ CACHE = os.path.join(BASE, '.embeddings.json')
 AUDIT = os.path.join(BASE, 'audit.jsonl')
 OLLAMA = 'http://127.0.0.1:11434'
 
-MODEL = os.environ.get('RO_MODEL', 'gemma2:2b')   # pluggable on purpose
-EMBED = 'nomic-embed-text'
+# Two backends, same gates (16.10.2026). 'ollama' runs the model on this machine;
+# 'openai' speaks the OpenAI-compatible API (Nebius Token Factory by default), so a
+# public demo never runs inference on a small shared server. The gates do not
+# care which backend produced the text: they check the ANSWER against the SOURCE.
+BACKEND = os.environ.get('RO_BACKEND', 'ollama')
+API_BASE = os.environ.get('RO_API_BASE', 'https://api.tokenfactory.nebius.com/v1').rstrip('/')
+API_KEY = os.environ.get('RO_API_KEY') or os.environ.get('NEBIUS_API_KEY', '')
+
+if BACKEND == 'openai':
+    MODEL = os.environ.get('RO_MODEL', 'google/gemma-3-27b-it')
+    EMBED = os.environ.get('RO_EMBED', 'Qwen/Qwen3-Embedding-8B')
+else:
+    MODEL = os.environ.get('RO_MODEL', 'gemma2:2b')   # pluggable on purpose
+    EMBED = os.environ.get('RO_EMBED', 'nomic-embed-text')
+# One cache per embedding model: vectors from two models are not comparable.
+if EMBED != 'nomic-embed-text':
+    CACHE = os.path.join(BASE, '.embeddings.' + re.sub(r'[^A-Za-z0-9]+', '-', EMBED).strip('-') + '.json')
 TOP_K = 3
 
 # ⭐MEASURED, NOT GUESSED. The first value here was 0.55, picked by intuition, and
@@ -68,6 +83,11 @@ TOP_K = 3
 # SOURCE TEXT rather than trusting a distance metric.
 # Re-run calibrate.py whenever the corpus changes; this number is corpus-specific.
 MIN_SIM = 0.68
+# Gate A is calibrated PER EMBEDDING MODEL (calibrate.py --write). Another model
+# uses another scale, so 0.68 means nothing outside nomic-embed-text.
+_GATE_A = os.path.join(BASE, 'gate_a.json')
+if os.path.exists(_GATE_A):
+    MIN_SIM = json.load(open(_GATE_A, encoding='utf-8')).get(EMBED, MIN_SIM)
 
 # Gate D. A sentence must reuse this fraction of its content words from a cited
 # source. Verbatim or near-verbatim answers score ~0.9-1.0; a sentence imported
@@ -81,15 +101,34 @@ REFUSAL = ("Nu pot raspunde la aceasta intrebare pe baza documentelor pe care le
            "Nu am o sursa care sa sustina un raspuns.")
 
 
-def _post(path, payload, timeout=300):
-    req = urllib.request.Request(OLLAMA + path,
-                                 data=json.dumps(payload).encode(),
-                                 headers={'Content-Type': 'application/json'})
+def _post(path, payload, timeout=300, base=OLLAMA, key=''):
+    headers = {'Content-Type': 'application/json'}
+    if key:
+        headers['Authorization'] = 'Bearer ' + key
+    req = urllib.request.Request(base + path, data=json.dumps(payload).encode(),
+                                 headers=headers)
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
 def embed(text):
+    if BACKEND == 'openai':
+        return _post('/embeddings', {'model': EMBED, 'input': text},
+                     base=API_BASE, key=API_KEY)['data'][0]['embedding']
     return _post('/api/embeddings', {'model': EMBED, 'prompt': text})['embedding']
+
+
+def generate(prompt, max_tokens=220):
+    """Deterministic generation (temperature 0) on either backend."""
+    if BACKEND == 'openai':
+        out = _post('/chat/completions', {
+            'model': MODEL, 'temperature': 0, 'max_tokens': max_tokens,
+            'messages': [{'role': 'user', 'content': prompt}]},
+            base=API_BASE, key=API_KEY, timeout=120)
+        return (out['choices'][0]['message']['content'] or '').strip()
+    return _post('/api/generate', {
+        'model': MODEL, 'prompt': prompt, 'stream': False,
+        'options': {'temperature': 0, 'num_predict': max_tokens},
+    })['response'].strip()
 
 
 def cosine(a, b):
@@ -216,12 +255,7 @@ def gated_answer(question, top, record, verbose=True):
     # map the number back to the real document here, where it cannot be got wrong.
     context = '\n\n'.join(f"[{i}] {d['titlu']}\n{d['body']}"
                           for i, (_, d) in enumerate(top, 1))
-    out = _post('/api/generate', {
-        'model': MODEL,
-        'prompt': PROMPT.format(context=context, question=question),
-        'stream': False,
-        'options': {'temperature': 0, 'num_predict': 220},
-    })['response'].strip()
+    out = generate(PROMPT.format(context=context, question=question))
     record['raw'] = out
 
     # Split the sources line off BEFORE judging abstention, because the abstention

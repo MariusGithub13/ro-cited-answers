@@ -87,13 +87,19 @@ app-boots:
     - cat app.log || true
 
 # ---------------------------------------------------------------- secure
-semgrep-sast:
+# The templates name their analyzer jobs themselves (and rename them between
+# GitLab versions), so the stage is set on the shared hidden job they all extend.
+.sast-analyzer:
   stage: secure
-  extends: .not_scheduled
+
+.secret-analyzer:
+  stage: secure
+
+sast:
+  stage: secure
 
 secret_detection:
   stage: secure
-  extends: .not_scheduled
 
 # ---------------------------------------------------------------- package
 build-image:
@@ -157,7 +163,7 @@ promote:
   stage: release
   image: google/cloud-sdk:slim
   extends: [.gcp_auth, .on_default_branch]
-  needs: [validate-candidate, container_scanning, semgrep-sast, secret_detection]
+  needs: [validate-candidate, container_scanning]
   resource_group: production
   environment:
     name: production

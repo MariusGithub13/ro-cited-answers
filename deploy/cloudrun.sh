@@ -53,10 +53,27 @@ case "${1:-}" in
       --format='value(status.traffic[0].revisionName)' > "$STATE_FILE" || true
     echo "serving before promote: $(cat "$STATE_FILE")"
     g run services update-traffic "$SERVICE" --region="$REGION" --to-tags="$TAG=100"
-    # Drop the candidate tags of older commits (they carry no traffic), keep this one.
-    old=$(g run services describe "$SERVICE" --region="$REGION" --format=json \
-      | python3 -c 'import json,sys,os; t=json.load(sys.stdin)["status"].get("traffic",[]); print(",".join(sorted({x["tag"] for x in t if x.get("tag") and x["tag"]!=os.environ["TAG"] and (x["tag"].startswith("c-") or x["tag"]=="candidate")})))')
-    [ -n "$old" ] && g run services update-traffic "$SERVICE" --region="$REGION" --remove-tags="$old" || true
+    ;;
+  cleanup)
+    # Best effort, run only AFTER the production check passed: remove the candidate tags of commits
+    # that are ANCESTORS of this one (never a newer commit's tag, which may be under validation),
+    # plus the legacy shared "candidate" tag. Any failure here is logged and ignored.
+    tags=$(g run services describe "$SERVICE" --region="$REGION" --format=json 2>/dev/null \
+      | python3 -c 'import json,sys; t=json.load(sys.stdin)["status"].get("traffic",[]); print(" ".join(sorted({x["tag"] for x in t if x.get("tag")})))' 2>/dev/null) || tags=""
+    old=""
+    for t in $tags; do
+      [ "$t" = "$TAG" ] && continue
+      if [ "$t" = candidate ]; then old="$old,$t"; continue; fi
+      case "$t" in c-*) ;; *) continue ;; esac
+      if git merge-base --is-ancestor "${t#c-}" HEAD 2>/dev/null; then old="$old,$t"; fi
+    done
+    old="${old#,}"
+    if [ -n "$old" ]; then
+      g run services update-traffic "$SERVICE" --region="$REGION" --remove-tags="$old" \
+        && echo "removed older candidate tags: $old" || echo "tag cleanup failed (ignored): $old"
+    else
+      echo "no older candidate tags to remove"
+    fi
     ;;
   rollback)
     prev="$(cat "$STATE_FILE" 2>/dev/null || true)"

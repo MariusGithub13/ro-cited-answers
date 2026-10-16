@@ -14,7 +14,8 @@ nothing starts (no thread, no queue). Export is best effort: Cloud Run throttles
 between requests, so a span can wait for the next request to leave. The group's ingestion
 endpoint takes no key, so anyone who knows the group id could post spans to it: treat the
 telemetry as an operational signal, never as evidence. Requests from deploy/smoke.py carry
-X-RO-Smoke: 1 and are marked ro.synthetic.
+X-RO-Smoke: 1 and are marked ro.synthetic; any client can send that header,
+so ro.synthetic is a hint, not proof.
 
   OTEL_EXPORTER_OTLP_ENDPOINT   e.g. https://<group id>.otel.gitlab-o11y.com:14318 (unset = off)
   APP_VERSION                   service.version

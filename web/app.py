@@ -16,6 +16,9 @@ but Python itself.
                     (not /healthz: Cloud Run reserves paths ending in z, 16.10.2026)
   GET  /api/stats   how many questions today, accepted and refused, by gate
 
+Telemetry (web/otel.py): one span per POST /api/ask to GitLab Observability when
+OTEL_EXPORTER_OTLP_ENDPOINT is set: outcome, gate, status, latency. Never the question.
+
 Limits, because the model is a paid API: 300 characters per question, 6
 questions per minute per address, and a daily cap for the whole service.
 """
@@ -23,7 +26,9 @@ import collections, datetime, html, json, os, sys, threading, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ask  # noqa: E402
+import otel  # noqa: E402  (web/otel.py: one span per question, off when no endpoint is set)
 
 VERSION = os.environ.get('APP_VERSION', 'dev')
 PORT = int(os.environ.get('PORT', '8080'))
@@ -173,7 +178,8 @@ class Handler(BaseHTTPRequestHandler):
         if path in ('/health', '/healthz'):
             return self._send(200, {'ok': True, 'version': VERSION, 'backend': ask.BACKEND,
                                     'model': ask.MODEL, 'embed': ask.EMBED,
-                                    'min_sim': ask.MIN_SIM, 'min_ground': ask.MIN_GROUND})
+                                    'min_sim': ask.MIN_SIM, 'min_ground': ask.MIN_GROUND,
+                                    'telemetry': otel.status()})
         if path == '/api/stats':
             return self._send(200, {'date': _day['date'], 'total': _day['total'],
                                     'by_verdict_gate': dict(_day['verdicts'])})
@@ -182,25 +188,30 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.split('?')[0] != '/api/ask':
             return self._send(404, {'error': 'not found'})
+        t0 = time.time_ns()
+
+        def done(code, body, outcome, gate=None):
+            otel.record(outcome, gate, code, t0,     # verdict, gate, status, timing: nothing else
+                        synthetic=self.headers.get('X-RO-Smoke') == '1')
+            return self._send(code, body)
         try:
             n = int(self.headers.get('Content-Length') or 0)
             q = (json.loads(self.rfile.read(min(n, 4096)) or b'{}').get('question') or '').strip()
         except (ValueError, AttributeError):
-            return self._send(400, {'error': 'JSON invalid'})
+            return done(400, {'error': 'JSON invalid'}, 'rejected')
         if not q or len(q) > MAX_LEN:
-            return self._send(400, {'error': f'Întrebarea trebuie să aibă între 1 și {MAX_LEN} de caractere.'})
+            return done(400, {'error': f'Întrebarea trebuie să aibă între 1 și {MAX_LEN} de caractere.'}, 'rejected')
         if not _rate_ok(self._addr()):
-            return self._send(429, {'error': 'Prea multe întrebări într-un minut. Reveniți puțin mai târziu.'})
+            return done(429, {'error': 'Prea multe întrebări într-un minut. Reveniți puțin mai târziu.'}, 'rate_limited')
         if _day['date'] == _today() and _day['total'] >= DAILY_CAP:
-            return self._send(429, {'error': 'Limita zilnică a demonstrației a fost atinsă. Reveniți mâine.'})
+            return done(429, {'error': 'Limita zilnică a demonstrației a fost atinsă. Reveniți mâine.'}, 'daily_cap')
         try:
             out = answer(q)
         except Exception as e:           # a model or network failure is reported, never hidden
             sys.stderr.write(f'ask failed: {e!r}\n')
-            return self._send(502, {'error': 'Modelul nu a răspuns. Încercați din nou.'})
+            return done(502, {'error': 'Modelul nu a răspuns. Încercați din nou.'}, 'error')
         _count(out['verdict'], out['gate'])
-        return self._send(200, out)
-
+        return done(200, out, 'answered' if out['verdict'] == 'ACCEPTAT' else 'refused', out['gate'])
 
 if __name__ == '__main__':
     ask.build_index(ask.load_docs())   # build or load the vector cache before the first visitor

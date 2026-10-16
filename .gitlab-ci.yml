@@ -21,6 +21,9 @@ variables:
   RUN_SERVICE: ro-cited
   AR_REPO: ro-cited
   AR_IMAGE: ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${AR_REPO}/app
+  # GitLab Observability (group 144951419): the app sends one span per question here.
+  # Ingestion needs no key (checked 16.10.2026: empty batch 200, nonsense path 404, wrong group 410).
+  OTEL_EXPORTER_OTLP_ENDPOINT: https://144951419.otel.gitlab-o11y.com:14318
   APP_VERSION: ${CI_COMMIT_SHORT_SHA}
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
@@ -67,7 +70,8 @@ gates-offline:
   extends: .not_scheduled
   script:
     - python3 test_gates_offline.py
-    - python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py eval/run_eval.py eval/build_items.py web/app.py deploy/*.py
+    - python3 test_otel_offline.py
+    - python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py test_otel_offline.py eval/run_eval.py eval/build_items.py web/app.py web/otel.py deploy/*.py
 
 eval-set-reproducible:
   stage: verify
@@ -87,7 +91,8 @@ app-boots:
     # Boots on the committed Qwen3 vector cache (the one the image ships), with no
     # model key and no model call, and must pass the content checks (real page,
     # UTF-8, nonsense path 404). Reproduced on a clean checkout before pushing.
-    - (PORT=8080 RO_BACKEND=openai RO_AUDIT=/tmp/audit.jsonl python3 web/app.py > app.log 2>&1 &)
+    # Telemetry off here: a CI boot must not send spans labelled production.
+    - (PORT=8080 RO_BACKEND=openai RO_AUDIT=/tmp/audit.jsonl OTEL_EXPORTER_OTLP_ENDPOINT= python3 web/app.py > app.log 2>&1 &)
     - for i in $(seq 1 20); do python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health')" 2>/dev/null && break; sleep 1; done
     - python3 deploy/smoke.py http://127.0.0.1:8080 --no-model
   after_script:
@@ -183,6 +188,8 @@ validate-candidate:
   image: python:3.12-slim
   extends: .on_default_branch
   needs: [deploy-candidate]
+  variables:
+    SMOKE_EXPECT_TELEMETRY: "1"
   script:
     - python3 deploy/smoke.py "$CANDIDATE_URL"
 
@@ -195,6 +202,7 @@ promote:
   resource_group: production
   variables:
     GIT_DEPTH: "0"
+    SMOKE_EXPECT_TELEMETRY: "1"
   environment:
     name: production
   script:

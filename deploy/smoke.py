@@ -26,7 +26,11 @@ REFUSE_Q = 'Care este capitala Frantei?'
 
 
 def fetch(url, data=None, timeout=60):
-    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'} if data else {})
+    # X-RO-Smoke marks the pipeline's own traffic, so its telemetry spans are labelled ro.synthetic.
+    headers = {'X-RO-Smoke': '1'}
+    if data:
+        headers['Content-Type'] = 'application/json'
+    req = urllib.request.Request(url, data=data, headers=headers)
     try:
         r = urllib.request.urlopen(req, timeout=timeout)
         return r.status, r.headers.get('Content-Type', ''), r.read().decode('utf-8', 'replace')
@@ -54,6 +58,11 @@ def main():
     check('health ok', code == 200 and h.get('ok') is True, f'HTTP {code}')
     if want_version:
         check('health version', h.get('version') == want_version, f"{h.get('version')} vs {want_version}")
+    # Telemetry must be ON where the pipeline configured it (candidate and production), so a
+    # deploy that silently lost its endpoint fails here instead of going dark in Observability.
+    if os.environ.get('OTEL_EXPORTER_OTLP_ENDPOINT') and os.environ.get('SMOKE_EXPECT_TELEMETRY') == '1':
+        t = h.get('telemetry') or {}
+        check('telemetry on', t.get('enabled') is True, f"telemetry={t}")
 
     code, ctype, body = fetch(base + '/')
     check('page is the real page', code == 200 and '<title>RO Cited Answers</title>' in body, f'HTTP {code}, {len(body)} chars')

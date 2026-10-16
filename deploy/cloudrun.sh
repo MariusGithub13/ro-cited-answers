@@ -43,7 +43,7 @@ case "${1:-}" in
       --cpu=1 --memory=512Mi --concurrency=8 --min-instances=0 --max-instances=2 \
       --timeout=120 --cpu-throttling \
       --no-invoker-iam-check \
-      --set-env-vars="APP_VERSION=${APP_VERSION:-dev},RO_BACKEND=openai,RO_DAILY_CAP=${RO_DAILY_CAP:-400},NEBIUS_API_KEY=${NEBIUS_API_KEY:?NEBIUS_API_KEY}" \
+      --set-env-vars="APP_VERSION=${APP_VERSION:-dev},RO_BACKEND=openai,RO_DAILY_CAP=${RO_DAILY_CAP:-400},NEBIUS_API_KEY=${NEBIUS_API_KEY:?NEBIUS_API_KEY},OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-},DEPLOY_ENV=production,GITLAB_PROJECT_ID=${CI_PROJECT_ID:-},GITLAB_PROJECT_NAME=${CI_PROJECT_NAME:-}" \
       --labels="managed-by=gitlab-ci,commit=${CI_COMMIT_SHORT_SHA:-local}"
     ;;
   promote)

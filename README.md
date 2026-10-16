@@ -227,6 +227,23 @@ started one second after the v3 deploy passed, wrote the release summary, and re
 from its sandbox (the proxy answered 403 to CONNECT: the sandbox blocks outbound traffic by default, and the allowlist above
 was added after that run, because of it) instead of claiming it had. That second behaviour is the one this project is about.
 
+## Observability (GitLab, added 16 October 2026)
+
+Every question to `POST /api/ask` sends one span to GitLab Observability over OTLP/HTTP, from
+[`web/otel.py`](web/otel.py), standard library only. A span carries an allowlist and nothing else:
+the outcome (answered, refused, rejected, rate limited, daily cap, error), the gate that refused,
+the HTTP status and the latency, plus `service.version` (the commit) and `gitlab.project.id`.
+**It never carries the question, the answer, the gate's reason text, the sources or the visitor's
+address**, and `test_otel_offline.py` proves it end to end by sending a question with a fake name and
+CNP through the real app and searching the bytes the collector receives.
+
+A dead or slow collector cannot slow an answer: spans go on a bounded queue, one background thread
+sends them with a 2 second timeout, and five failures in a row pause sending for a minute. `/health`
+reports `telemetry` (on or off, sent, failed, dropped), and the candidate and production checks fail
+if telemetry is off, so a deploy that lost its endpoint cannot go dark unnoticed. The pipeline's own check questions
+are marked `ro.synthetic` (a hint: any client can send the header). The group's ingestion endpoint takes no key, so the telemetry is an
+operational signal, not evidence.
+
 ## The corpus
 
 Five documents on Romanian customs and EORI procedure, drawn from public

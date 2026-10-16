@@ -214,7 +214,7 @@ answers, never answer without a citation, agents open merge requests but never p
 | `rca-review` | it is set as reviewer, or a merge request is marked ready | gate-aware review: can this change make the system answer something it used to refuse? |
 | `rca-fix` | a pipeline fails (not a scheduled one) | reads the failing jobs, opens a fix merge request on `duo-fix/<pipeline>`; never touches a threshold to make a test pass |
 | `rca-secure` | it is assigned or mentioned on an issue | triages SAST, secret and container findings by reachability in this code; dismisses nothing itself |
-| `rca-release` | a pipeline on `main` passes or fails | after a deploy: commits, scan results, and its own check of the live service, posted to the Production log issue; a failed promote or monitor run becomes an incident issue |
+| `rca-release` | a pipeline on `main` passes or fails | after a deploy: commits, scan results, and its own check of the live service (when its sandbox allows it), posted to the Production log issue; a failed promote or monitor run becomes an incident issue |
 
 The flows are code: [`.gitlab/duo/flows/`](.gitlab/duo/flows) holds the YAML, [`flows.json`](.gitlab/duo/flows.json)
 their triggers and conditions, and [`deploy/duo_sync.py`](deploy/duo_sync.py) applies them through the GitLab API
@@ -224,7 +224,8 @@ two production hostnames ([`.gitlab/duo/agent-config.yml`](.gitlab/duo/agent-con
 
 What the first runs did: `rca-plan` turned issue #1 into a plan in about two minutes without being asked; `rca-release`
 started one second after the v3 deploy passed, wrote the release summary, and reported that it could NOT reach production
-from its sandbox instead of claiming it had. That second behaviour is the one this project is about.
+from its sandbox (the proxy answered 403 to CONNECT: the sandbox blocks outbound traffic by default, and the allowlist above
+was added after that run, because of it) instead of claiming it had. That second behaviour is the one this project is about.
 
 ## The corpus
 

@@ -84,17 +84,17 @@ def answer(question):
 
 
 EXAMPLES = [
-    'In cate zile se returneaza un colet daca nu depun documentele?',
-    'Cand am nevoie de cod EORI pentru un colet?',
-    'Cum verific daca un numar EORI este valid?',
-    'Care este capitala Frantei?',
+    'În câte zile se returnează un colet dacă nu depun documentele?',
+    'Când am nevoie de cod EORI pentru un colet?',
+    'Cum verific dacă un număr EORI este valid?',
+    'Care este capitala Franței?',
 ]
 
 PAGE = """<!doctype html>
 <html lang="ro"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RO Cited Answers</title>
-<meta name="description" content="Raspunsuri in limba romana care trec prin patru porti de verificare: fiecare propozitie are sursa ei, altfel raspunsul este refuzat.">
+<meta name="description" content="Răspunsuri în limba română care trec prin patru porți de verificare: fiecare propoziție are sursa ei, altfel răspunsul este refuzat.">
 <style>
 :root{--bg:#ffffff;--fg:#1a1a1a;--muted:#4a4a4a;--line:#d0d0d0;--ok:#0b6b2f;--no:#9b1c1c;--card:#f5f5f5;--link:#0b4f9c}
 @media (prefers-color-scheme:dark){:root{--bg:#121212;--fg:#ececec;--muted:#b8b8b8;--line:#3a3a3a;--ok:#6fd492;--no:#ff9b9b;--card:#1e1e1e;--link:#8cc4ff}}
@@ -109,22 +109,22 @@ button{padding:12px 18px;font:inherit;border:0;border-radius:8px;background:var(
 ol{padding-left:20px}li{margin:6px 0}footer{margin-top:32px;color:var(--muted);font-size:.9rem}
 </style></head><body><main>
 <h1>RO Cited Answers</h1>
-<p class="lead">Intrebati despre returnarea coletelor si codul EORI. Raspunsul trece prin patru porti: sursa potrivita, citare, cifre, si fiecare propozitie sustinuta de o sursa. Daca o poarta pica, raspunsul este refuzat.</p>
-<form id="f"><input id="q" maxlength="300" placeholder="Intrebarea dumneavoastra" aria-label="Intrebarea"><button>Intreaba</button></form>
+<p class="lead">Întrebați despre returnarea coletelor și codul EORI. Răspunsul trece prin patru porți: sursa potrivită, citarea, cifrele și fiecare propoziție susținută de o sursă. Dacă o poartă pică, răspunsul este refuzat.</p>
+<form id="f"><input id="q" maxlength="300" placeholder="Întrebarea dumneavoastră" aria-label="Întrebarea"><button>Întreabă</button></form>
 <div class="ex">__EXAMPLES__</div>
 <div id="out" aria-live="polite"></div>
-<footer>Model: __MODEL__ · versiune __VERSION__ · cod sursa MIT: <a href="__REPO__">__REPO__</a></footer>
+<footer>Model: __MODEL__ · versiunea __VERSION__ · cod sursă MIT: <a href="__REPO__">__REPO__</a></footer>
 </main><script>
 const f=document.getElementById('f'),q=document.getElementById('q'),out=document.getElementById('out');
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-async function go(text){q.value=text;out.innerHTML='<p><small>Se verifica...</small></p>';
+async function go(text){q.value=text;out.innerHTML='<p><small>Se verifică...</small></p>';
  try{const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:text})});
  const d=await r.json();if(!r.ok){out.innerHTML='<div class="card">'+esc(d.error||'Eroare')+'</div>';return}
  const ok=d.verdict==='ACCEPTAT';let h='<div class="card"><p class="v '+(ok?'ok':'no')+'">'+(ok?'ACCEPTAT':'REFUZAT')+(d.gate?' · poarta '+esc(d.gate):'')+'</p><p>'+esc(d.answer)+'</p>';
  if(d.reason)h+='<p><small>'+esc(d.reason)+'</small></p>';
- if(ok){h+='<p><b>Fiecare propozitie si sursa ei</b></p><ol>'+d.attribution.map(a=>'<li>'+esc(a.sentence)+' <small>['+esc(a.source)+', '+Math.round(a.overlap*100)+'%]</small></li>').join('')+'</ol>';
-  h+='<p><b>Surse</b></p><ol>'+d.sources.map(s=>'<li>'+esc(s.title)+'<br><a href="'+esc(s.url)+'" rel="noopener">'+esc(s.url)+'</a> <small>verificat '+esc(s.checked)+'</small></li>').join('')+'</ol>'}
- out.innerHTML=h+'</div>'}catch(e){out.innerHTML='<div class="card">Eroare de retea.</div>'}}
+ if(ok){h+='<p><b>Fiecare propoziție și sursa ei</b></p><ol>'+d.attribution.map(a=>'<li>'+esc(a.sentence)+' <small>['+esc(a.source)+', '+Math.round(a.overlap*100)+'%]</small></li>').join('')+'</ol>';
+  h+='<p><b>Surse</b></p><ol>'+d.sources.map(s=>'<li>'+esc(s.title)+'<br><a href="'+esc(s.url)+'" rel="noopener">'+esc(s.url)+'</a> <small>verificat la '+esc(s.checked)+'</small></li>').join('')+'</ol>'}
+ out.innerHTML=h+'</div>'}catch(e){out.innerHTML='<div class="card">Eroare de rețea.</div>'}}
 f.addEventListener('submit',e=>{e.preventDefault();if(q.value.trim())go(q.value.trim())});
 document.querySelectorAll('.ex button').forEach(b=>b.addEventListener('click',()=>go(b.textContent)));
 </script></body></html>"""
@@ -181,16 +181,16 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, AttributeError):
             return self._send(400, {'error': 'JSON invalid'})
         if not q or len(q) > MAX_LEN:
-            return self._send(400, {'error': f'Intrebarea trebuie sa aiba intre 1 si {MAX_LEN} de caractere.'})
+            return self._send(400, {'error': f'Întrebarea trebuie să aibă între 1 și {MAX_LEN} de caractere.'})
         if not _rate_ok(self._addr()):
-            return self._send(429, {'error': 'Prea multe intrebari intr-un minut. Reveniti putin mai tarziu.'})
+            return self._send(429, {'error': 'Prea multe întrebări într-un minut. Reveniți puțin mai târziu.'})
         if _day['date'] == _today() and _day['total'] >= DAILY_CAP:
-            return self._send(429, {'error': 'Limita zilnica a demonstratiei a fost atinsa. Reveniti maine.'})
+            return self._send(429, {'error': 'Limita zilnică a demonstrației a fost atinsă. Reveniți mâine.'})
         try:
             out = answer(q)
         except Exception as e:           # a model or network failure is reported, never hidden
             sys.stderr.write(f'ask failed: {e!r}\n')
-            return self._send(502, {'error': 'Modelul nu a raspuns. Incercati din nou.'})
+            return self._send(502, {'error': 'Modelul nu a răspuns. Încercați din nou.'})
         _count(out['verdict'], out['gate'])
         return self._send(200, out)
 

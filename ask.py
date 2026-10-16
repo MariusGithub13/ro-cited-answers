@@ -97,8 +97,8 @@ if os.path.exists(_GATE_A):
 # no claim, and refusing over it would just reintroduce false refusals.
 MIN_GROUND = 0.50
 MIN_SENTENCE_WORDS = 5
-REFUSAL = ("Nu pot raspunde la aceasta intrebare pe baza documentelor pe care le am. "
-           "Nu am o sursa care sa sustina un raspuns.")
+REFUSAL = ("Nu pot răspunde la această întrebare pe baza documentelor pe care le am. "
+           "Nu am o sursă care să susțină un răspuns.")
 
 
 def _post(path, payload, timeout=300, base=OLLAMA, key=''):
@@ -237,7 +237,7 @@ def ask(question, verbose=True):
     # GATE A: does the corpus even cover this?
     if not top or top[0][0] < MIN_SIM:
         record.update(verdict='REFUZAT', gate='A_RETRIEVAL',
-                      reason=f'cea mai buna potrivire {top[0][0]:.2f} < {MIN_SIM}')
+                      reason=f'cea mai bună potrivire {top[0][0]:.2f} < {MIN_SIM}')
         return _finish(record, REFUSAL, verbose)
 
     return gated_answer(question, top, record, verbose)
@@ -275,7 +275,7 @@ def gated_answer(question, top, record, verbose=True):
     answer = re.sub(r'\bnu[_ ]?stiu\b\.?', ' ', answer, flags=re.I).strip()
     if len(_content_words(answer)) < MIN_SENTENCE_WORDS:
         record.update(verdict='REFUZAT', gate='MODEL_ABSTAINED',
-                      reason='modelul a declarat ca nu stie')
+                      reason='modelul a declarat că nu știe')
         return _finish(record, REFUSAL, verbose)
 
     # GATE B: citations must exist and must resolve to something we actually retrieved
@@ -307,7 +307,7 @@ def gated_answer(question, top, record, verbose=True):
 
     if not tokens:
         record.update(verdict='REFUZAT', gate='B_CITATION',
-                      reason='raspunsul nu indica nicio sursa')
+                      reason='răspunsul nu indică nicio sursă')
         return _finish(record, REFUSAL, verbose)
 
     if invented:
@@ -322,7 +322,7 @@ def gated_answer(question, top, record, verbose=True):
     unsupported = sorted(n for n in ans_nums - src_nums)
     if unsupported:
         record.update(verdict='REFUZAT', gate='C_NUMBERS',
-                      reason=f'cifre nesustinute de sursele citate: {unsupported}')
+                      reason=f'cifre nesusținute de sursele citate: {unsupported}')
         return _finish(record, REFUSAL, verbose)
 
     # GATE D + ATTRIBUTION: ⭐the one that does not ask the model to cooperate,
@@ -364,11 +364,11 @@ def gated_answer(question, top, record, verbose=True):
 
     if ungrounded:
         record.update(verdict='REFUZAT', gate='D_GROUNDING',
-                      reason=f'propozitii nesustinute de sursele citate: {ungrounded}')
+                      reason=f'propoziții nesusținute de sursele citate: {ungrounded}')
         return _finish(record, REFUSAL, verbose)
     if not used:
         record.update(verdict='REFUZAT', gate='D_GROUNDING',
-                      reason='nicio propozitie nu a putut fi atribuita unei surse')
+                      reason='nicio propoziție nu a putut fi atribuită unei surse')
         return _finish(record, REFUSAL, verbose)
 
     padding = [c for c in cited if c not in used]

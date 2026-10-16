@@ -177,6 +177,15 @@ promote:
   environment:
     name: production
   script:
+    # Never promote an older commit over a newer one: when two merges land together, only the
+    # pipeline of the commit that is still the head of main promotes (the newer one carries both).
+    - |
+      HEAD_SHA=$(python3 -c "import json,os,urllib.request;print(json.load(urllib.request.urlopen(os.environ['CI_API_V4_URL']+'/projects/'+os.environ['CI_PROJECT_ID']+'/repository/branches/'+os.environ['CI_DEFAULT_BRANCH']))['commit']['id'])")
+      if [ "$HEAD_SHA" != "$CI_COMMIT_SHA" ]; then
+        echo "main has moved on to $HEAD_SHA: this commit is not promoted, the newer pipeline deploys it"
+        echo "PROD_URL=" > prod.env
+        exit 0
+      fi
     - python3 deploy/gcp_token.py > gcp-token.txt
     - deploy/cloudrun.sh promote
     - PROD_URL=$(deploy/cloudrun.sh url)
@@ -199,7 +208,11 @@ release-notes:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   extends: .on_default_branch
   needs: [promote]
+  # A commit that was not promoted (main had moved on) gets no release: exit 3 is allowed and skips it.
+  allow_failure:
+    exit_codes: [3]
   script:
+    - if [ -z "${PROD_URL:-}" ]; then echo "not promoted, no release for this commit"; exit 3; fi
     - echo "release v$CI_PIPELINE_IID at $PROD_URL"
   release:
     tag_name: v$CI_PIPELINE_IID

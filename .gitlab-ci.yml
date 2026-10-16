@@ -93,6 +93,25 @@ app-boots:
   after_script:
     - cat app.log || true
 
+deploy-tools-check:
+  # Proves, in every pipeline including merge requests, what promote relies on: git exists in the
+  # promote image, the head of main can be read with the job's clone URL, and the ancestor test works.
+  stage: verify
+  image: google/cloud-sdk:slim
+  extends: .not_scheduled
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - git --version
+    - HEAD_SHA=$(git ls-remote "$CI_REPOSITORY_URL" "refs/heads/$CI_DEFAULT_BRANCH" | cut -f1)
+    - test -n "$HEAD_SHA" || { echo "cannot read the head of $CI_DEFAULT_BRANCH"; exit 1; }
+    - echo "head of $CI_DEFAULT_BRANCH = $HEAD_SHA"
+    - git fetch -q origin "$CI_DEFAULT_BRANCH"
+    - git merge-base --is-ancestor "$(git rev-parse --short=8 FETCH_HEAD~1)" FETCH_HEAD || { echo "ancestor test FAILED"; exit 1; }
+    - echo "ancestor test ok"
+    - if git merge-base --is-ancestor FETCH_HEAD FETCH_HEAD~1; then echo "non-ancestor test FAILED"; exit 1; fi
+    - echo "non-ancestor test ok"
+
 # ---------------------------------------------------------------- secure
 # The templates name their analyzer jobs themselves (and rename them between
 # GitLab versions), so the stage is set on the shared hidden job they all extend.
@@ -174,13 +193,39 @@ promote:
   extends: [.gcp_auth, .on_default_branch]
   needs: [validate-candidate, container_scanning]
   resource_group: production
+  variables:
+    GIT_DEPTH: "0"
   environment:
     name: production
   script:
     - python3 deploy/gcp_token.py > gcp-token.txt
+    # Never promote an older commit over a newer one: when two merges land together, only the
+    # pipeline of the commit that is still the head of main promotes (the newer one carries both).
+    # 1) the head of main via git on the job's clone URL, 3 tries, errors shown;
+    # 2) if that cannot be read: skip when production already serves a commit that contains this one.
+    - |
+      HEAD_SHA=""
+      for i in 1 2 3; do
+        HEAD_SHA=$(git ls-remote "$CI_REPOSITORY_URL" "refs/heads/$CI_DEFAULT_BRANCH" | cut -f1) && [ -n "$HEAD_SHA" ] && break
+        echo "head-of-main lookup failed (try $i)"; sleep 5
+      done
+      if [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$CI_COMMIT_SHA" ]; then
+        echo "main has moved on to $HEAD_SHA: this commit is not promoted, the newer pipeline deploys it"
+        echo "PROMOTED=false" > prod.env; rm -f gcp-token.txt
+        exit 0
+      fi
+      if [ -z "$HEAD_SHA" ]; then
+        SERVING=$(deploy/cloudrun.sh serving-commit || true)
+        echo "WARNING: head of main unreadable; production serves ${SERVING:-unknown}"
+        if [ -n "$SERVING" ] && [ "$SERVING" != "$CI_COMMIT_SHORT_SHA" ] && git merge-base --is-ancestor "$CI_COMMIT_SHA" "$SERVING" 2>/dev/null; then
+          echo "production already serves a newer commit that contains this one: not promoted"
+          echo "PROMOTED=false" > prod.env; rm -f gcp-token.txt
+          exit 0
+        fi
+      fi
     - deploy/cloudrun.sh promote
     - PROD_URL=$(deploy/cloudrun.sh url)
-    - echo "PROD_URL=$PROD_URL" > prod.env
+    - printf 'PROMOTED=true\nPROD_URL=%s\n' "$PROD_URL" > prod.env
     # The automatic rollback: production must pass the same check, or traffic goes back.
     - |
       if ! python3 deploy/smoke.py "$PROD_URL"; then
@@ -188,6 +233,8 @@ promote:
         deploy/cloudrun.sh rollback
         exit 1
       fi
+    # Only after production passed: tidy the candidate tags of older commits (best effort).
+    - deploy/cloudrun.sh cleanup || true
     - rm -f gcp-token.txt
   artifacts:
     paths: [previous-revision.txt]
@@ -199,7 +246,11 @@ release-notes:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   extends: .on_default_branch
   needs: [promote]
+  # A commit that was not promoted (main had moved on) gets no release: exit 3 is allowed and skips it.
+  allow_failure:
+    exit_codes: [3]
   script:
+    - if [ "${PROMOTED:-}" != "true" ]; then echo "not promoted, no release for this commit"; exit 3; fi
     - echo "release v$CI_PIPELINE_IID at $PROD_URL"
   release:
     tag_name: v$CI_PIPELINE_IID

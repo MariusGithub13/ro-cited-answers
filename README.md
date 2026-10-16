@@ -240,7 +240,9 @@ CNP through the real app and searching the bytes the collector receives.
 A dead or slow collector cannot slow an answer: spans go on a bounded queue, one background thread
 sends them with a 2 second timeout, and five failures in a row pause sending for a minute. `/health`
 reports `telemetry` (on or off, sent, failed, dropped), and the candidate and production checks fail
-if telemetry is off, so a deploy that lost its endpoint cannot go dark unnoticed.
+if telemetry is off, so a deploy that lost its endpoint cannot go dark unnoticed. The pipeline's own check questions
+are marked `ro.synthetic`. The group's ingestion endpoint takes no key, so the telemetry is an
+operational signal, not evidence.
 
 ## The corpus
 

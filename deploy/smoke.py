@@ -26,7 +26,11 @@ REFUSE_Q = 'Care este capitala Frantei?'
 
 
 def fetch(url, data=None, timeout=60):
-    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'} if data else {})
+    # X-RO-Smoke marks the pipeline's own traffic, so its telemetry spans are labelled ro.synthetic.
+    headers = {'X-RO-Smoke': '1'}
+    if data:
+        headers['Content-Type'] = 'application/json'
+    req = urllib.request.Request(url, data=data, headers=headers)
     try:
         r = urllib.request.urlopen(req, timeout=timeout)
         return r.status, r.headers.get('Content-Type', ''), r.read().decode('utf-8', 'replace')

@@ -3,8 +3,10 @@
 Offline tests for web/otel.py: no model, no network except a stub collector on 127.0.0.1.
 
   1. the span is valid OTLP/HTTP JSON: ids of the right length, service.version, outcome and gate
-  2. end to end through the real app: a question carrying a fake name and a fake CNP is sent, and
-     the bytes the collector receives contain neither (nor any other text of the question)
+  2. end to end through the real app, on the rejected (400) and the normal (200) path, with answer()
+     stubbed to carry sentinel answer, reason and source text: the collector bytes contain none of
+     the question, answer, reason, sources, the fake name or the fake CNP, and the span attributes
+     are exactly the allowlist; smoke-check traffic is marked ro.synthetic
   3. a dead collector: record() returns at once, the failure is counted, the answer is not delayed
   4. a slow collector (10 s): record() still returns at once
   5. no endpoint configured: telemetry is off, record() is a no-op
@@ -91,7 +93,9 @@ otel = load_otel(f'http://127.0.0.1:{collector.server_port}')
 import app  # noqa: E402  (imports the same otel module object)
 app.otel = otel
 app_srv = serve(app.Handler)
-secret_question = 'Ion Popescu, CNP 1800101123456, ' + 'x' * 400   # too long: rejected, no model call
+# Sentinels a reader (and a review agent, which sees CNP-shaped strings redacted) can find in this file.
+Q_SENT, A_SENT, R_SENT, S_SENT = 'QSENTINEL7f3a', 'ASENTINEL9c1d', 'RSENTINEL2b8e', 'SSENTINEL5d0c'
+secret_question = f'Ion Popescu, CNP 1800101123456, {Q_SENT} ' + 'x' * 400   # too long: rejected, no model call
 req = urllib.request.Request(f'http://127.0.0.1:{app_srv.server_port}/api/ask',
                              data=json.dumps({'question': secret_question}).encode(),
                              headers={'Content-Type': 'application/json'}, method='POST')
@@ -105,12 +109,37 @@ check('a span reached the collector', wait_for(lambda: received), f'{len(receive
 raw = b''.join(b for _, b in received)
 check('collector path is /v1/traces', all(p == '/v1/traces' for p, _ in received))
 check('the question text never left the app',
-      b'1800101123456' not in raw and b'Popescu' not in raw and b'xxxxxxxxxx' not in raw)
+      b'1800101123456' not in raw and b'Popescu' not in raw and Q_SENT.encode() not in raw and b'xxxxxxxxxx' not in raw)
 body = json.loads(received[0][1])
 sp = body['resourceSpans'][0]['scopeSpans'][0]['spans'][0]
 check('outcome rejected, status 400', {a['key']: list(a['value'].values())[0] for a in sp['attributes']}['ro.outcome'] == 'rejected')
 health = json.load(urllib.request.urlopen(f'http://127.0.0.1:{app_srv.server_port}/health', timeout=5))
 check('/health reports telemetry on and counts', health['telemetry']['enabled'] and health['telemetry']['sent'] >= 1)
+
+# 2b. the 200 path, where answer text, the gate reason and sources exist: answer() is stubbed
+ALLOWED = {'http.route', 'http.request.method', 'http.response.status_code', 'ro.outcome', 'ro.latency_ms', 'ro.gate', 'ro.synthetic'}
+app.answer = lambda q: {'verdict': 'REFUZAT', 'gate': 'C_NUMBERS', 'answer': f'{A_SENT} 45 de zile',
+                        'reason': f'{R_SENT}: 45 nu apare in sursa', 'sources': [{'id': S_SENT, 'snippet': S_SENT}]}
+before = len(received)
+for question in (f'Cat dureaza, {Q_SENT}?', f'Ion Popescu, CNP 1800101123456, intreb {Q_SENT}'):
+    req = urllib.request.Request(f'http://127.0.0.1:{app_srv.server_port}/api/ask',
+                                 data=json.dumps({'question': question}).encode(),
+                                 headers={'Content-Type': 'application/json'}, method='POST')
+    resp = json.load(urllib.request.urlopen(req, timeout=5))
+check('200 path: the app still returns the full refusal to the visitor', resp['verdict'] == 'REFUZAT' and A_SENT in resp['answer'])
+check('200 path: spans reached the collector', wait_for(lambda: len(received) >= before + 1))
+raw2 = b''.join(b for _, b in received[before:])
+leaks = [n for n, v in (('question', Q_SENT), ('answer', A_SENT), ('reason', R_SENT), ('sources', S_SENT), ('CNP', '1800101123456'), ('name', 'Popescu')) if v.encode() in raw2]
+check('200 path: no question, answer, reason, source, CNP or name in the collector bytes', not leaks, f'leaked: {leaks}' if leaks else '')
+spans2 = [sp for _, b in received[before:] for sp in json.loads(b)['resourceSpans'][0]['scopeSpans'][0]['spans']]
+keys = set().union(*({a['key'] for a in sp['attributes']} for sp in spans2))
+check('span attributes are exactly the allowlist', keys <= ALLOWED, f'extra: {sorted(keys - ALLOWED)}' if keys - ALLOWED else '')
+a2 = {a['key']: list(a['value'].values())[0] for a in spans2[-1]['attributes']}
+check('200 path: outcome refused at gate C_NUMBERS', a2.get('ro.outcome') == 'refused' and a2.get('ro.gate') == 'C_NUMBERS')
+req = urllib.request.Request(f'http://127.0.0.1:{app_srv.server_port}/api/ask', data=json.dumps({'question': 'test'}).encode(),
+                             headers={'Content-Type': 'application/json', 'X-RO-Smoke': '1'}, method='POST')
+urllib.request.urlopen(req, timeout=5)
+check('a smoke-check request is marked synthetic', wait_for(lambda: any(b'ro.synthetic' in b for _, b in received[before:])))
 
 # 3. dead collector
 otel = load_otel(f'http://127.0.0.1:{free_port()}')

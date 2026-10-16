@@ -11,7 +11,10 @@ A slow or dead collector can never slow or break an answer: record() only puts t
 bounded queue (full = dropped and counted); one daemon thread sends, with a 2 s timeout, and
 after 5 failures in a row it pauses 60 s and drops spans meanwhile. No endpoint configured =
 nothing starts (no thread, no queue). Export is best effort: Cloud Run throttles the CPU
-between requests, so a span can wait for the next request to leave.
+between requests, so a span can wait for the next request to leave. The group's ingestion
+endpoint takes no key, so anyone who knows the group id could post spans to it: treat the
+telemetry as an operational signal, never as evidence. Requests from deploy/smoke.py carry
+X-RO-Smoke: 1 and are marked ro.synthetic.
 
   OTEL_EXPORTER_OTLP_ENDPOINT   e.g. https://<group id>.otel.gitlab-o11y.com:14318 (unset = off)
   APP_VERSION                   service.version
@@ -52,7 +55,7 @@ def _attr(key, value):
     return {'key': key, 'value': {'stringValue': str(value)}}
 
 
-def build_span(outcome, gate, status, start_ns, end_ns):
+def build_span(outcome, gate, status, start_ns, end_ns, synthetic=False):
     """The whole span, from the four allowed values plus timings. Nothing else goes in."""
     outcome = outcome if outcome in OUTCOMES else 'error'
     attrs = [_attr('http.route', '/api/ask'), _attr('http.request.method', 'POST'),
@@ -60,6 +63,8 @@ def build_span(outcome, gate, status, start_ns, end_ns):
              _attr('ro.latency_ms', int((end_ns - start_ns) // 1_000_000))]
     if outcome == 'refused' and gate in GATES:
         attrs.append(_attr('ro.gate', gate))
+    if synthetic:                           # the pipeline's own checks, so dashboards can leave them out
+        attrs.append(_attr('ro.synthetic', True))
     return {'traceId': os.urandom(16).hex(), 'spanId': os.urandom(8).hex(),
             'name': 'POST /api/ask', 'kind': 2,
             'startTimeUnixNano': str(start_ns), 'endTimeUnixNano': str(end_ns),
@@ -72,12 +77,12 @@ def payload(spans):
                                                'spans': spans}]}]}
 
 
-def record(outcome, gate, status, start_ns, end_ns=None):
+def record(outcome, gate, status, start_ns, end_ns=None, synthetic=False):
     """Never blocks, never raises."""
     if _q is None:
         return
     try:
-        _q.put_nowait(build_span(outcome, gate, status, start_ns, end_ns or time.time_ns()))
+        _q.put_nowait(build_span(outcome, gate, status, start_ns, end_ns or time.time_ns(), synthetic))
     except queue.Full:
         with _lock:
             counters['dropped'] += 1

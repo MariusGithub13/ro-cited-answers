@@ -191,7 +191,8 @@ class Handler(BaseHTTPRequestHandler):
         t0 = time.time_ns()
 
         def done(code, body, outcome, gate=None):
-            otel.record(outcome, gate, code, t0)     # verdict, gate, status, timing: nothing else
+            otel.record(outcome, gate, code, t0,     # verdict, gate, status, timing: nothing else
+                        synthetic=self.headers.get('X-RO-Smoke') == '1')
             return self._send(code, body)
         try:
             n = int(self.headers.get('Content-Length') or 0)

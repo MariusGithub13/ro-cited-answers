@@ -12,7 +12,8 @@ but Python itself.
 
   GET  /            the page
   POST /api/ask     {"question": "..."} -> verdict, gate, answer, sources, attribution
-  GET  /healthz     liveness plus the version and the gate thresholds in use
+  GET  /health      liveness plus the version and the gate thresholds in use
+                    (not /healthz: Cloud Run reserves paths ending in z, 16.10.2026)
   GET  /api/stats   how many questions today, accepted and refused, by gate
 
 Limits, because the model is a paid API: 300 characters per question, 6
@@ -162,7 +163,7 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split('?')[0]
         if path == '/':
             return self._send(200, render_page(), 'text/html; charset=utf-8')
-        if path == '/healthz':
+        if path in ('/health', '/healthz'):
             return self._send(200, {'ok': True, 'version': VERSION, 'backend': ask.BACKEND,
                                     'model': ask.MODEL, 'embed': ask.EMBED,
                                     'min_sim': ask.MIN_SIM, 'min_ground': ask.MIN_GROUND})

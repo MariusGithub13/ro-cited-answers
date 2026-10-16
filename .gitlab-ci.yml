@@ -82,7 +82,7 @@ app-boots:
     # model key and no model call, and must pass the content checks (real page,
     # UTF-8, nonsense path 404). Reproduced on a clean checkout before pushing.
     - (PORT=8080 RO_BACKEND=openai RO_AUDIT=/tmp/audit.jsonl python3 web/app.py > app.log 2>&1 &)
-    - for i in $(seq 1 20); do python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/healthz')" 2>/dev/null && break; sleep 1; done
+    - for i in $(seq 1 20); do python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health')" 2>/dev/null && break; sleep 1; done
     - python3 deploy/smoke.py http://127.0.0.1:8080 --no-model
   after_script:
     - cat app.log || true

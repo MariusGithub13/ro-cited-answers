@@ -9,7 +9,7 @@ must FAIL, so a server that answers everything cannot read as healthy.
   python3 deploy/smoke.py https://example.run.app [--no-model]
 
 Checks:
-  1. /healthz answers ok and names the expected version (APP_VERSION, if set)
+  1. /health answers ok and names the expected version (APP_VERSION, if set)
   2. / is the real page (its title), served as UTF-8
   3. a nonsense path returns 404, not 200
   4. an in-corpus question is ACCEPTED with at least one source and every
@@ -46,14 +46,14 @@ def main():
         print(f"{'PASS' if ok else 'FAIL'}  {name}" + (f'  ({detail})' if detail else ''))
 
     try:
-        code, _, body = fetch(base + '/healthz')
+        code, _, body = fetch(base + '/health')   # /healthz is reserved by Cloud Run
     except Exception as e:                       # DNS, TLS, timeout: unknown, not "down"
         print(f'COULD NOT REACH {base}: {e!r}')
         return 2
     h = json.loads(body) if code == 200 else {}
-    check('healthz ok', code == 200 and h.get('ok') is True, f'HTTP {code}')
+    check('health ok', code == 200 and h.get('ok') is True, f'HTTP {code}')
     if want_version:
-        check('healthz version', h.get('version') == want_version, f"{h.get('version')} vs {want_version}")
+        check('health version', h.get('version') == want_version, f"{h.get('version')} vs {want_version}")
 
     code, ctype, body = fetch(base + '/')
     check('page is the real page', code == 200 and '<title>RO Cited Answers</title>' in body, f'HTTP {code}, {len(body)} chars')

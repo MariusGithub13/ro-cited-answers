@@ -1,0 +1,216 @@
+# RO Cited Answers: the post-code lifecycle, end to end.
+#
+#   verify    unit tests on the gates, the eval set is reproducible, the app boots
+#   secure    SAST and secret detection on every change
+#   package   one image per commit (GitLab registry + Artifact Registry), then a container scan
+#   deploy    a Cloud Run CANDIDATE revision that receives no traffic
+#   validate  the candidate must pass the live check (real page, real model, gates firing)
+#   release   promote to 100% traffic, re-check, ROLL BACK automatically if the check fails,
+#             then a GitLab release that names the revision
+#   monitor   a scheduled pipeline re-checks production and opens an issue when it fails
+#
+# Auth to Google Cloud uses Workload Identity Federation: GitLab signs a JWT for the
+# job, Google trusts gitlab.com, and no service account key exists anywhere.
+
+stages: [verify, secure, package, deploy, validate, release, monitor]
+
+variables:
+  GCP_PROJECT: ro-cited-gitlab
+  GCP_PROJECT_NUMBER: "210002791432"
+  GCP_REGION: europe-north1
+  RUN_SERVICE: ro-cited
+  AR_REPO: ro-cited
+  AR_IMAGE: ${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${AR_REPO}/app
+  APP_VERSION: ${CI_COMMIT_SHORT_SHA}
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+.on_default_branch:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+.not_scheduled:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - when: on_success
+
+.gcp_auth:
+  id_tokens:
+    GCP_ID_TOKEN:
+      aud: https://iam.googleapis.com/projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/gitlab-pool/providers/gitlab
+
+# ---------------------------------------------------------------- verify
+gates-offline:
+  stage: verify
+  image: python:3.12-slim
+  extends: .not_scheduled
+  script:
+    - python3 test_gates_offline.py
+    - python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py eval/run_eval.py eval/build_items.py web/app.py deploy/*.py
+
+eval-set-reproducible:
+  stage: verify
+  image: python:3.12-slim
+  extends: .not_scheduled
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git >/dev/null
+  script:
+    # The committed eval items must be exactly what the builder produces from the sources.
+    - cd eval && python3 build_items.py && git diff --exit-code items.jsonl
+
+app-boots:
+  stage: verify
+  image: python:3.12-slim
+  extends: .not_scheduled
+  script:
+    # Boots on the committed vector cache, no model needed, and must pass the
+    # content checks (real page, UTF-8, nonsense path 404).
+    - (PORT=8080 RO_BACKEND=ollama RO_AUDIT=/tmp/audit.jsonl python3 web/app.py > app.log 2>&1 &)
+    - for i in $(seq 1 20); do python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/healthz')" 2>/dev/null && break; sleep 1; done
+    - python3 deploy/smoke.py http://127.0.0.1:8080 --no-model
+  after_script:
+    - cat app.log || true
+
+# ---------------------------------------------------------------- secure
+semgrep-sast:
+  stage: secure
+  extends: .not_scheduled
+
+secret_detection:
+  stage: secure
+  extends: .not_scheduled
+
+# ---------------------------------------------------------------- package
+build-image:
+  stage: package
+  image: docker:27
+  services: [docker:27-dind]
+  extends: [.gcp_auth, .not_scheduled]
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - apk add --no-cache python3 >/dev/null
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build --build-arg APP_VERSION="$APP_VERSION" -t "$CI_REGISTRY_IMAGE:$APP_VERSION" .
+    - docker push "$CI_REGISTRY_IMAGE:$APP_VERSION"
+    # Only the default branch ships to Google Cloud.
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        python3 deploy/gcp_token.py > gcp-token.txt
+        python3 deploy/ar_ensure.py gcp-token.txt
+        docker login -u oauth2accesstoken --password-stdin "https://${GCP_REGION}-docker.pkg.dev" < gcp-token.txt
+        docker tag "$CI_REGISTRY_IMAGE:$APP_VERSION" "$AR_IMAGE:$APP_VERSION"
+        docker push "$AR_IMAGE:$APP_VERSION"
+        rm -f gcp-token.txt
+      fi
+
+container_scanning:
+  stage: package
+  needs: [build-image]
+  extends: .not_scheduled
+  variables:
+    CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+# ---------------------------------------------------------------- deploy
+deploy-candidate:
+  stage: deploy
+  image: google/cloud-sdk:slim
+  extends: [.gcp_auth, .on_default_branch]
+  needs: [build-image, gates-offline, app-boots]
+  script:
+    - python3 deploy/gcp_token.py > gcp-token.txt
+    - deploy/cloudrun.sh candidate "$AR_IMAGE:$APP_VERSION"
+    - echo "CANDIDATE_URL=$(deploy/cloudrun.sh url candidate)" > candidate.env
+    - cat candidate.env
+    - rm -f gcp-token.txt
+  artifacts:
+    reports:
+      dotenv: candidate.env
+
+# ---------------------------------------------------------------- validate
+validate-candidate:
+  stage: validate
+  image: python:3.12-slim
+  extends: .on_default_branch
+  needs: [deploy-candidate]
+  script:
+    - python3 deploy/smoke.py "$CANDIDATE_URL"
+
+# ---------------------------------------------------------------- release
+promote:
+  stage: release
+  image: google/cloud-sdk:slim
+  extends: [.gcp_auth, .on_default_branch]
+  needs: [validate-candidate, container_scanning, semgrep-sast, secret_detection]
+  resource_group: production
+  environment:
+    name: production
+  script:
+    - python3 deploy/gcp_token.py > gcp-token.txt
+    - deploy/cloudrun.sh promote
+    - PROD_URL=$(deploy/cloudrun.sh url)
+    - echo "PROD_URL=$PROD_URL" > prod.env
+    # The automatic rollback: production must pass the same check, or traffic goes back.
+    - |
+      if ! python3 deploy/smoke.py "$PROD_URL"; then
+        echo "production check FAILED after promote: rolling back"
+        deploy/cloudrun.sh rollback
+        exit 1
+      fi
+    - rm -f gcp-token.txt
+  artifacts:
+    paths: [previous-revision.txt]
+    reports:
+      dotenv: prod.env
+
+release-notes:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  extends: .on_default_branch
+  needs: [promote]
+  script:
+    - echo "release v$CI_PIPELINE_IID at $PROD_URL"
+  release:
+    tag_name: v$CI_PIPELINE_IID
+    name: "v$CI_PIPELINE_IID ($CI_COMMIT_SHORT_SHA)"
+    description: "Deployed $CI_COMMIT_SHORT_SHA to Cloud Run ($GCP_REGION). Live: $PROD_URL. Passed the gate tests, SAST, secret detection, container scan, the candidate check and the production check."
+    ref: $CI_COMMIT_SHA
+
+# ---------------------------------------------------------------- monitor
+monitor-production:
+  stage: monitor
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - |
+      if ! python3 deploy/smoke.py "$PROD_URL_STATIC" --no-model; then
+        if [ -n "${MONITOR_TOKEN:-}" ]; then
+          python3 - <<'EOF'
+      import json, os, urllib.request
+      body = {"title": "Production check failed (scheduled monitor)",
+              "description": f"The scheduled check against {os.environ['PROD_URL_STATIC']} failed in pipeline {os.environ['CI_PIPELINE_URL']}. See the job log for which check failed.",
+              "labels": "incident,monitor"}
+      req = urllib.request.Request(f"{os.environ['CI_API_V4_URL']}/projects/{os.environ['CI_PROJECT_ID']}/issues",
+          data=json.dumps(body).encode(), headers={"PRIVATE-TOKEN": os.environ["MONITOR_TOKEN"], "Content-Type": "application/json"})
+      print("issue opened:", json.load(urllib.request.urlopen(req))["web_url"])
+      EOF
+        fi
+        exit 1
+      fi

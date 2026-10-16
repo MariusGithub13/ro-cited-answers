@@ -47,7 +47,7 @@ import json, os, re, sys, urllib.request, hashlib, datetime, unicodedata
 BASE = os.path.dirname(os.path.abspath(__file__))
 CORPUS = os.path.join(BASE, 'corpus')
 CACHE = os.path.join(BASE, '.embeddings.json')
-AUDIT = os.path.join(BASE, 'audit.jsonl')
+AUDIT = os.environ.get('RO_AUDIT', os.path.join(BASE, 'audit.jsonl'))
 OLLAMA = 'http://127.0.0.1:11434'
 
 # Two backends, same gates (16.10.2026). 'ollama' runs the model on this machine;

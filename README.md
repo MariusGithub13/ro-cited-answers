@@ -7,8 +7,16 @@ grounding demo is the whole point and the quotes are verbatim evidence.)*
 A small, self-hosted Romanian question-answering demo that will not give you an
 answer it cannot trace to a source document.
 
-Everything runs locally: an open-weight model on Ollama, on a 4-core VPS in the
-EU, no external API, no key, no data leaving the machine.
+It runs two ways, with the same four gates in both:
+
+- **Locally:** an open-weight model on Ollama, on a 4-core VPS in the EU, no
+  external API, no key, no data leaving the machine.
+- **Live demo:** https://ro-cited-210002791432.europe-north1.run.app , on Google
+  Cloud Run, with an open-weight model (gemma-3-27b-it) and embedding model
+  (Qwen3-Embedding-8B) behind an OpenAI-compatible API. Every answer still goes
+  through the gates; the page shows the verdict, the gate that decided it and the
+  source behind each sentence. Deployed only by the GitLab pipeline described in
+  [The post-code pipeline](#the-post-code-pipeline-gitlab-added-16-october-2026).
 
 ## Why this exists
 
@@ -121,6 +129,19 @@ If Ollama is not running on `127.0.0.1:11434`, every script above except `test_g
 `Connection refused` traceback. What ran and what did not on 15 October 2026, on a machine without Ollama,
 is in [docs/README-PROOF-2026-10-15.md](docs/README-PROOF-2026-10-15.md).
 
+The hosted backend is one environment variable away, with a key for any
+OpenAI-compatible endpoint (Nebius Token Factory by default):
+
+```bash
+RO_BACKEND=openai NEBIUS_API_KEY=... python3 ask.py "Cand am nevoie de cod EORI?"
+RO_BACKEND=openai NEBIUS_API_KEY=... PORT=8080 python3 web/app.py   # the live page locally
+```
+
+Gate A is calibrated per embedding model: `calibrate.py --write` stores the
+threshold in `gate_a.json` (Qwen3-Embedding-8B: lowest legitimate question 0.588,
+highest impostor 0.426, threshold 0.507, a clean separation that nomic-embed-text
+never had). Each embedding model keeps its own vector cache.
+
 The model is pluggable on purpose, because the model is not the differentiator:
 
 ```bash
@@ -131,6 +152,50 @@ Every decision, accepted or refused, is appended to `audit.jsonl` with the
 retrieval scores, the gate that fired, and the per-sentence attribution. A
 refusal you cannot reconstruct later is just a different kind of unverifiable
 output.
+
+## The post-code pipeline (GitLab, added 16 October 2026)
+
+Everything after the code is written is automated in [`.gitlab-ci.yml`](.gitlab-ci.yml).
+A push to `main` goes to production with no human step, and production is only
+changed when a check on the LIVE service says the new version works.
+
+| Stage | What runs | What stops the release |
+|---|---|---|
+| verify | the gate tests on canned model output; the eval items rebuilt from their sources and diffed; the app boots and passes the content checks | any test failing, or an eval file that no longer matches its sources |
+| secure | GitLab SAST and secret detection | the job failing |
+| package | one image per commit, pushed to the GitLab registry and to Artifact Registry; GitLab container scanning | a failed build or scan job |
+| deploy | a new Cloud Run revision tagged `candidate`, receiving **no traffic** | the deploy failing |
+| validate | [`deploy/smoke.py`](deploy/smoke.py) against the candidate URL: the version, the real page, UTF-8, a nonsense path that must be 404, a real question that must be ACCEPTED with sources, an impostor that must be REFUSED at gate A | any of the 7 checks |
+| release | 100% of traffic to the candidate, then the same check on production; **if it fails, traffic goes back** to the revision recorded at promote time ([`deploy/cloudrun.sh`](deploy/cloudrun.sh) `rollback`); then a GitLab release naming the commit | the production check |
+| monitor | a pipeline schedule every 6 hours re-checks production (no model call, so it costs nothing) | a failed check fails the pipeline, which notifies the owner |
+
+Design choices worth checking:
+
+- **No service account key exists.** The Google Cloud organisation blocks key
+  creation, and that is the right default. GitLab signs a short-lived identity
+  token for each job, Google trusts gitlab.com through Workload Identity
+  Federation, and [`deploy/gcp_token.py`](deploy/gcp_token.py) exchanges it for a
+  one-hour token of the deploy account. Only pipelines of this project's owner or
+  namespace can use it.
+- **A 200 is never a pass.** Every check reads the content, and a deliberately
+  wrong path must fail, so a proxy or an error page that answers everything
+  cannot look healthy. The checks have three outcomes: pass, fail, and could not
+  reach (exit 2), which is never reported as "down".
+- **The rollback target is read from the live service at promote time**, never a
+  constant, so it cannot point at a revision that stopped existing months ago.
+- **Scale to zero.** The service runs no instance between visits (cold start
+  about 10 seconds), with a daily question cap and a per-address rate limit,
+  because the model is a paid API.
+
+What the first runs caught, in the open: Cloud Run reserves URL paths ending in
+`z`, so `/healthz` never reached the app and the candidate check stopped the
+release (now `/health`); and Artifact Registry creates a repository a few
+seconds after confirming it, so the first image push failed until the script
+waited for it to be readable. Both are in the pipeline history.
+
+What is new for this repository on or after 5 October 2026: the hosted backend,
+the per-model gate A calibration, the live page and API (`web/`), the Dockerfile,
+`deploy/` and `.gitlab-ci.yml`. The gates and the corpus predate it.
 
 ## The corpus
 
@@ -254,8 +319,9 @@ What the numbers say, and no more:
 
 ## Honest limitations
 
-- **Slow.** CPU-only inference on 4 shared cores runs at roughly 2 tokens/second.
-  Fine for a demonstration, not fine for production traffic.
+- **Slow locally.** CPU-only inference on 4 shared cores runs at roughly 2 tokens/second.
+  Fine for a demonstration, not fine for production traffic. The live demo answers
+  in about 10 seconds on a cold start and faster after.
 - **Lexical grounding, not semantic.** Gate D compares content words by a
   fixed-length prefix, so it forgives Romanian inflection (`returnat` against
   `returnata`) but not synonymy. A correct paraphrase that shares little

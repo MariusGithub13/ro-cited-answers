@@ -129,7 +129,7 @@ f.addEventListener('submit',e=>{e.preventDefault();if(q.value.trim())go(q.value.
 document.querySelectorAll('.ex button').forEach(b=>b.addEventListener('click',()=>go(b.textContent)));
 </script></body></html>"""
 
-REPO = os.environ.get('RO_REPO_URL', 'https://github.com/MariusGithub13/ro-cited-answers')
+REPO = os.environ.get('RO_REPO_URL', 'https://gitlab.com/devaland/ro-cited-answers')
 
 
 def render_page():

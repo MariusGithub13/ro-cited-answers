@@ -34,8 +34,14 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
-    - if: $CI_COMMIT_BRANCH
+    # Scheduled runs are the production monitor only: the security templates have
+    # their own rules, so they are switched off with their documented variables.
     - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        SAST_DISABLED: "true"
+        SECRET_DETECTION_DISABLED: "true"
+        CONTAINER_SCANNING_DISABLED: "true"
+    - if: $CI_COMMIT_BRANCH
 
 .on_default_branch:
   rules:
@@ -129,7 +135,9 @@ build-image:
 
 container_scanning:
   stage: package
-  needs: [build-image]
+  needs:
+    - job: build-image
+      optional: true
   extends: .not_scheduled
   variables:
     CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA

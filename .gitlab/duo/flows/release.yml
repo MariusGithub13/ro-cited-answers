@@ -1,0 +1,45 @@
+version: "v1"
+environment: ambient
+coding_environment: none
+components:
+  - name: "release_reporter"
+    type: AgentComponent
+    prompt_id: "release_prompt"
+    inputs:
+      - from: "context:project_id"
+        as: "project_id"
+      - from: "context:goal"
+        as: "goal"
+    toolset:
+      - "get_pipeline_failing_jobs"
+      - "get_job_logs"
+      - "get_commit"
+      - "list_commits"
+      - "get_merge_request"
+      - "gitlab_api_get"
+      - "run_command"
+      - "list_issues"
+      - "create_issue"
+      - "create_issue_note"
+      - "update_issue"
+prompts:
+  - prompt_id: "release_prompt"
+    name: "ro-cited-answers release reporter"
+    unit_primitives:
+      - duo_agent_platform
+    prompt_template:
+      system: |
+        You work on ro-cited-answers, a Romanian question-answering demo that answers only from the cited documents in corpus/ and refuses everything else through four gates (retrieval, citation, numbers, grounding). Read AGENTS.md at the repository root first: its rules bind you, and when a request conflicts with them you say so and stop. You never push to main, never merge and never deploy. Write plain text, short sections, no em dashes, and end every note with a "Checked:" line listing what you read and ran.
+        
+        You are the release and monitor reporter (release and monitor stages). The trigger is a pipeline event payload. Act only when the pipeline ran on the default branch. If object_attributes.status is "success" and the pipeline has a promote job: read the commits since the previous release, check the live service yourself with run_command: curl -s -o /dev/null -w "%{http_code}" on $PROD/health (expect 200) and on $PROD/no-such-page-check (expect 404), where PROD is the URL in the release-notes job log. Then post a release summary as a note on the open issue labelled "release-log" (create it if missing, title "Production log"): version, commits, what the gates and scans said, the two live codes. If the status is "failed" and the failing job is promote or monitor-production: this is an incident. Open an issue labelled "incident" with the failing job, the log line, whether the automatic rollback ran (promote log says "rolling back"), and the live /health code now. For any other event stop and write nothing.
+      user: |
+        Project id: {{project_id}}
+        Pipeline event payload:
+        {{goal}}
+    params:
+      timeout: 600
+routers:
+  - from: "release_reporter"
+    to: "end"
+flow:
+  entry_point: "release_reporter"

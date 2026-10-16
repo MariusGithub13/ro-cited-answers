@@ -1,0 +1,26 @@
+{
+  "project": "gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers",
+  "flows": [
+    {"name": "rca-plan", "file": "plan.yml", "stage": "plan",
+     "description": "Plan stage: turns a new issue into a scoped plan that respects the citation gates (ro-cited-answers).",
+     "triggers": ["mention", "work_item"]},
+    {"name": "rca-review", "file": "review.yml", "stage": "create + verify",
+     "description": "Create/verify stage: gate-aware merge request review. Asks the one question that matters: can this change make the system answer what it used to refuse?",
+     "triggers": ["mention", "assign_reviewer", "merge_request_ready"]},
+    {"name": "rca-fix", "file": "fix.yml", "stage": "verify",
+     "description": "Verify stage: when a pipeline fails, reads the failing jobs and opens a fix merge request (never touches the gates).",
+     "triggers": ["mention", "pipeline_hooks"],
+     "conditions": {"pipelineHooks": {"match": "ALL", "rules": [
+        {"field": "object_attributes.status", "operator": "IN", "value": ["failed"]},
+        {"field": "object_attributes.source", "operator": "NOT_IN", "value": ["schedule"]}]}}},
+    {"name": "rca-secure", "file": "secure.yml", "stage": "secure",
+     "description": "Secure stage: triages SAST, secret and container findings by reachability and opens a base-image merge request. Dismisses nothing itself.",
+     "triggers": ["mention", "assign"]},
+    {"name": "rca-release", "file": "release.yml", "stage": "release + monitor",
+     "description": "Release/monitor stage: after a deploy on main, checks the live service and posts the release summary; on a failed promote or monitor run, opens an incident.",
+     "triggers": ["mention", "pipeline_hooks"],
+     "conditions": {"pipelineHooks": {"match": "ALL", "rules": [
+        {"field": "object_attributes.ref", "operator": "EQ", "value": "main"},
+        {"field": "object_attributes.status", "operator": "IN", "value": ["success", "failed"]}]}}}
+  ]
+}

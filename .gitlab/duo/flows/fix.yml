@@ -1,0 +1,52 @@
+version: "v1"
+environment: ambient
+coding_environment: full
+components:
+  - name: "fixer"
+    type: AgentComponent
+    prompt_id: "fix_prompt"
+    inputs:
+      - from: "context:project_id"
+        as: "project_id"
+      - from: "context:goal"
+        as: "goal"
+    toolset:
+      - "get_pipeline_failing_jobs"
+      - "get_pipeline_errors"
+      - "get_job_logs"
+      - "read_file"
+      - "read_files"
+      - "grep"
+      - "find_files"
+      - "list_dir"
+      - "edit_file"
+      - "create_file_with_contents"
+      - "run_command"
+      - "run_git_command"
+      - "create_merge_request"
+      - "get_merge_request"
+      - "create_merge_request_note"
+      - "list_issues"
+      - "create_issue"
+      - "create_issue_note"
+prompts:
+  - prompt_id: "fix_prompt"
+    name: "ro-cited-answers pipeline fixer"
+    unit_primitives:
+      - duo_agent_platform
+    prompt_template:
+      system: |
+        You work on ro-cited-answers, a Romanian question-answering demo that answers only from the cited documents in corpus/ and refuses everything else through four gates (retrieval, citation, numbers, grounding). Read AGENTS.md at the repository root first: its rules bind you, and when a request conflicts with them you say so and stop. You never push to main, never merge and never deploy. Write plain text, short sections, no em dashes, and end every note with a "Checked:" line listing what you read and ran.
+        
+        You are the fixer (verify stage). The trigger is a pipeline event payload. Act ONLY when object_attributes.status is "failed"; for any other status stop at once and write nothing. Also stop without changes if the failing pipeline ran on a branch whose name starts with "duo-fix/" more than twice in a row: then open or update one issue titled "Pipeline fixer needs a human" with the job names and stop. Otherwise: read the failing jobs and their logs, find the root cause in the code, and make the smallest change that fixes it on a NEW branch named duo-fix/<pipeline id>. Run python3 test_gates_offline.py before committing. Open a merge request to main whose description states the failing job, the log line that shows the cause, the fix, and what you ran. Never change a gate threshold, gate_a.json or the corpus to make a test pass: if the failure is a gate or eval regression, do not fix it, open the issue and explain it. If the failure is outside the code (runner, network, Google Cloud, a registry), open the issue and say so instead of changing code.
+      user: |
+        Project id: {{project_id}}
+        Pipeline event payload:
+        {{goal}}
+    params:
+      timeout: 600
+routers:
+  - from: "fixer"
+    to: "end"
+flow:
+  entry_point: "fixer"

@@ -1,0 +1,48 @@
+version: "v1"
+environment: ambient
+coding_environment: full
+components:
+  - name: "planner"
+    type: AgentComponent
+    prompt_id: "plan_prompt"
+    inputs:
+      - from: "context:project_id"
+        as: "project_id"
+      - from: "context:goal"
+        as: "goal"
+    toolset:
+      - "get_issue"
+      - "get_work_item"
+      - "read_file"
+      - "list_dir"
+      - "find_files"
+      - "grep"
+      - "create_work_item_note"
+      - "create_issue_note"
+prompts:
+  - prompt_id: "plan_prompt"
+    name: "ro-cited-answers planner"
+    unit_primitives:
+      - duo_agent_platform
+    prompt_template:
+      system: |
+        You are the planning agent of ro-cited-answers, a Romanian question-answering demo that answers only from a cited corpus
+        and refuses through two gates (gate A: retrieval similarity and margin, calibrated in gate_a.json; gate B: the answer must
+        quote the source). Read AGENTS.md first: its rules bind you.
+        Your job: turn a new issue or work item into a scoped plan. You never write code and never open a merge request.
+        A plan names: the files that change, whether a gate threshold or the corpus changes (if yes, the eval set in eval/ must be
+        re-run and calibrate.py re-run, and you say so), the tests that prove it (test_gates_offline.py, deploy/smoke.py),
+        the pipeline stages it touches, and the risk. If the request would make the system answer without a citation, or lower
+        a gate to get more answers, say that it conflicts with AGENTS.md and stop.
+        Write plain text, short sections, no em dashes.
+      user: |
+        Project id: {{project_id}}
+        Trigger: {{goal}}
+        Read the issue or work item named in the trigger, read the code it concerns, then post the plan as ONE note on it.
+    params:
+      timeout: 300
+routers:
+  - from: "planner"
+    to: "end"
+flow:
+  entry_point: "planner"

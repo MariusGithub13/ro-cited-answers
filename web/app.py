@@ -30,6 +30,11 @@ PORT = int(os.environ.get('PORT', '8080'))
 MAX_LEN = 300
 PER_MINUTE = int(os.environ.get('RO_PER_MINUTE', '6'))
 DAILY_CAP = int(os.environ.get('RO_DAILY_CAP', '400'))
+# Sent on every response: no referrer leaks the question URL, and the page asks for no device features.
+SECURITY_HEADERS = {
+    'Referrer-Policy': 'no-referrer',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+}
 
 _lock = threading.Lock()          # one model call at a time: predictable cost and load
 _hits = collections.defaultdict(collections.deque)
@@ -149,6 +154,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(data)))
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Cache-Control', 'no-store')
+        for name, value in SECURITY_HEADER.items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)
 

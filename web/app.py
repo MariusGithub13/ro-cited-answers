@@ -154,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(data)))
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Cache-Control', 'no-store')
-        for name, value in SECURITY_HEADER.items():
+        for name, value in SECURITY_HEADERS.items():
             self.send_header(name, value)
         self.end_headers()
         self.wfile.write(data)

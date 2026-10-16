@@ -156,6 +156,11 @@ output.
 ## The post-code pipeline (GitLab, added 16 October 2026)
 
 Everything after the code is written is automated in [`.gitlab-ci.yml`](.gitlab-ci.yml).
+
+The project lives in the GitLab Transcend hackathon workspace:
+https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers
+(pipelines: `/-/pipelines`). The GitHub repository is the original MIT project it started from:
+https://github.com/MariusGithub13/ro-cited-answers
 A push to `main` goes to production with no human step, and production is only
 changed when a check on the LIVE service says the new version works.
 

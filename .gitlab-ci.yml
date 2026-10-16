@@ -104,10 +104,13 @@ deploy-tools-check:
   script:
     - git --version
     - HEAD_SHA=$(git ls-remote "$CI_REPOSITORY_URL" "refs/heads/$CI_DEFAULT_BRANCH" | cut -f1)
-    - test -n "$HEAD_SHA" && echo "head of $CI_DEFAULT_BRANCH = $HEAD_SHA"
+    - test -n "$HEAD_SHA" || { echo "cannot read the head of $CI_DEFAULT_BRANCH"; exit 1; }
+    - echo "head of $CI_DEFAULT_BRANCH = $HEAD_SHA"
     - git fetch -q origin "$CI_DEFAULT_BRANCH"
-    - git merge-base --is-ancestor "$(git rev-parse --short=8 FETCH_HEAD~1)" FETCH_HEAD && echo "ancestor test ok"
-    - if git merge-base --is-ancestor "$CI_COMMIT_SHA" "$(git rev-parse FETCH_HEAD~1)"; then echo "unexpected"; exit 1; else echo "non-ancestor test ok"; fi
+    - git merge-base --is-ancestor "$(git rev-parse --short=8 FETCH_HEAD~1)" FETCH_HEAD || { echo "ancestor test FAILED"; exit 1; }
+    - echo "ancestor test ok"
+    - if git merge-base --is-ancestor FETCH_HEAD FETCH_HEAD~1; then echo "non-ancestor test FAILED"; exit 1; fi
+    - echo "non-ancestor test ok"
 
 # ---------------------------------------------------------------- secure
 # The templates name their analyzer jobs themselves (and rename them between
@@ -195,20 +198,31 @@ promote:
   environment:
     name: production
   script:
+    - python3 deploy/gcp_token.py > gcp-token.txt
     # Never promote an older commit over a newer one: when two merges land together, only the
     # pipeline of the commit that is still the head of main promotes (the newer one carries both).
-    # The lookup uses git over HTTPS with the job's own clone URL (works on private projects too).
-    # If it cannot be read, the promote goes ahead and says so: per-commit candidate tags already
-    # keep the checks apart, and blocking every deploy on a lookup is the worse failure.
+    # 1) the head of main via git on the job's clone URL, 3 tries, errors shown;
+    # 2) if that cannot be read: skip when production already serves a commit that contains this one.
     - |
-      HEAD_SHA=$(git ls-remote "$CI_REPOSITORY_URL" "refs/heads/$CI_DEFAULT_BRANCH" 2>/dev/null | cut -f1)
+      HEAD_SHA=""
+      for i in 1 2 3; do
+        HEAD_SHA=$(git ls-remote "$CI_REPOSITORY_URL" "refs/heads/$CI_DEFAULT_BRANCH" | cut -f1) && [ -n "$HEAD_SHA" ] && break
+        echo "head-of-main lookup failed (try $i)"; sleep 5
+      done
       if [ -n "$HEAD_SHA" ] && [ "$HEAD_SHA" != "$CI_COMMIT_SHA" ]; then
         echo "main has moved on to $HEAD_SHA: this commit is not promoted, the newer pipeline deploys it"
-        echo "PROMOTED=false" > prod.env
+        echo "PROMOTED=false" > prod.env; rm -f gcp-token.txt
         exit 0
       fi
-      [ -z "$HEAD_SHA" ] && echo "WARNING: could not read the head of main; promoting anyway"
-    - python3 deploy/gcp_token.py > gcp-token.txt
+      if [ -z "$HEAD_SHA" ]; then
+        SERVING=$(deploy/cloudrun.sh serving-commit || true)
+        echo "WARNING: head of main unreadable; production serves ${SERVING:-unknown}"
+        if [ -n "$SERVING" ] && [ "$SERVING" != "$CI_COMMIT_SHORT_SHA" ] && git merge-base --is-ancestor "$CI_COMMIT_SHA" "$SERVING" 2>/dev/null; then
+          echo "production already serves a newer commit that contains this one: not promoted"
+          echo "PROMOTED=false" > prod.env; rm -f gcp-token.txt
+          exit 0
+        fi
+      fi
     - deploy/cloudrun.sh promote
     - PROD_URL=$(deploy/cloudrun.sh url)
     - printf 'PROMOTED=true\nPROD_URL=%s\n' "$PROD_URL" > prod.env

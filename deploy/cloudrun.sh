@@ -54,6 +54,11 @@ case "${1:-}" in
     echo "serving before promote: $(cat "$STATE_FILE")"
     g run services update-traffic "$SERVICE" --region="$REGION" --to-tags="$TAG=100"
     ;;
+  serving-commit)
+    # The short sha of the revision serving production, read from the commit label set at deploy.
+    rev=$(g run services describe "$SERVICE" --region="$REGION" --format='value(status.traffic[0].revisionName)')
+    g run revisions describe "$rev" --region="$REGION" --format='value(metadata.labels.commit)'
+    ;;
   cleanup)
     # Best effort, run only AFTER the production check passed: remove the candidate tags of commits
     # that are ANCESTORS of this one (never a newer commit's tag, which may be under validation),

@@ -27,11 +27,16 @@ Every decision goes to the audit log. A refusal is a correct output, not a bug.
 8. **Romanian text keeps its diacritics** (ă â î ș ț) in the page, examples, refusals and API errors.
 9. **Agents open merge requests, they never push to `main` and never merge.** A human merges.
 10. **Say what you checked.** A review or a triage note lists what was read and run. "Looks fine" without that is not a review.
+11. **Production settings live in `deploy/service-config.json`.** Resources, scaling, timeout, CPU throttling, the invoker
+    check and the fixed env vars are changed there, in a merge request, never in the Cloud Run console. The `config-drift`
+    job puts any live difference back to the file; an agent that thinks a live value was BETTER opens a merge request that
+    adopts it into the file, with the reason, and a human merges.
 
 ## How to check a change
 - `python3 test_gates_offline.py` (no model, no network): the gate logic.
+- `python3 test_config_offline.py` (no network): the configure stage, declared settings against a live service dump.
 - `python3 deploy/smoke.py <url> --no-model`: the live page, the API, UTF-8, and a nonsense path that must 404.
-- The pipeline: verify, secure, package, deploy, validate, release, monitor (see `.gitlab-ci.yml`).
+- The pipeline: verify, secure, package, deploy, validate, release, configure, monitor (see `.gitlab-ci.yml`).
 
 ## Writing style for notes
 Plain text, short sections, no em dashes. Name files with paths and jobs by name.

@@ -18,6 +18,23 @@ It runs two ways, with the same four gates in both:
   source behind each sentence. Deployed only by the GitLab pipeline described in
   [The post-code pipeline](#the-post-code-pipeline-gitlab-added-16-october-2026).
 
+## The nine stages, and where to check each one
+
+Every stage of the post-code lifecycle is automated here, and each line points at the run that proves it.
+Project: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers
+
+| Stage | What does it | Proof to open |
+|---|---|---|
+| plan | `rca-plan` flow: a new issue becomes a scoped plan (files, gates touched, tests, risk) | issue #1, planned by the flow in about two minutes: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/issues/1 |
+| create | `rca-fix` flow writes the code fix; `rca-review` reviews every merge request against the gate rules | !3, the fix for a broken pipeline: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/merge_requests/3 · !5, three review rounds before merge: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/merge_requests/5 |
+| verify | gate tests, eval set rebuilt and diffed, app boots, config tests (`gates-offline`, `eval-set-reproducible`, `app-boots`) | pipelines: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/pipelines |
+| package | one image per commit to the GitLab registry and Artifact Registry, then container scanning | container registry: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/container_registry |
+| secure | SAST, secret detection, container scanning; `rca-secure` triages by reachability and moved the base image | !4, container findings 166 to 1: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/merge_requests/4 |
+| release | candidate revision with no traffic, live check, promote, automatic rollback, a release per deploy; `rca-release` posts each one | releases: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/releases · Production log: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/issues/2 |
+| configure | production settings declared in [`deploy/service-config.json`](deploy/service-config.json); `config-drift` compares them with the live service and puts drift back; `rca-configure` reports it | [Configuration as code](#configuration-as-code-gitlab-added-17-october-2026) |
+| monitor | a schedule every 6 hours re-checks production; one span per question to GitLab Observability | pipeline schedules: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/pipeline_schedules · [Observability](#observability-gitlab-added-16-october-2026) |
+| govern | [AGENTS.md](AGENTS.md) binds every agent (11 rules: never lower a gate, never answer without a citation, agents never merge or deploy); per-path review rules; the flow sandbox may reach only production | [`.gitlab/duo/`](.gitlab/duo) |
+
 ## Why this exists
 
 There is a good argument going on in Europe about sovereign AI: open weights,
@@ -169,9 +186,10 @@ changed when a check on the LIVE service says the new version works.
 | verify | the gate tests on canned model output; the eval items rebuilt from their sources and diffed; the app boots and passes the content checks | any test failing, or an eval file that no longer matches its sources |
 | secure | GitLab SAST and secret detection | the job failing |
 | package | one image per commit, pushed to the GitLab registry and to Artifact Registry; GitLab container scanning | a failed build or scan job |
-| deploy | a new Cloud Run revision tagged `candidate`, receiving **no traffic** | the deploy failing |
+| deploy | a new Cloud Run revision tagged `c-<commit>`, receiving **no traffic** | the deploy failing |
 | validate | [`deploy/smoke.py`](deploy/smoke.py) against the candidate URL: the version, the real page, UTF-8, a nonsense path that must be 404, a real question that must be ACCEPTED with sources, an impostor that must be REFUSED at gate A | any of the 7 checks |
 | release | 100% of traffic to the candidate, then the same check on production; **if it fails, traffic goes back** to the revision recorded at promote time ([`deploy/cloudrun.sh`](deploy/cloudrun.sh) `rollback`); then a GitLab release naming the commit | the production check |
+| configure | the live service and its serving revision compared with [`deploy/service-config.json`](deploy/service-config.json); drift is redeployed back to the file through the same candidate, check and promote path | the job fails on purpose when it found drift, so the `rca-configure` flow reports it |
 | monitor | a pipeline schedule every 6 hours re-checks production (no model call, so it costs nothing) | a failed check fails the pipeline, which notifies the owner |
 
 Design choices worth checking:
@@ -204,7 +222,7 @@ the per-model gate A calibration, the live page and API (`web/`), the Dockerfile
 
 ## The agents after the code (GitLab Duo, added 16 October 2026)
 
-The pipeline proves a change; the agents run the work around it. Five custom Duo flows, one per part of the
+The pipeline proves a change; the agents run the work around it. Six custom Duo flows, one per part of the
 lifecycle, each with its own service account, all bound by [AGENTS.md](AGENTS.md): never lower a gate to get more
 answers, never answer without a citation, agents open merge requests but never push to `main`, merge or deploy.
 
@@ -215,6 +233,7 @@ answers, never answer without a citation, agents open merge requests but never p
 | `rca-fix` | a pipeline fails (not a scheduled one) | reads the failing jobs, opens a fix merge request on `duo-fix/<pipeline>`; never touches a threshold to make a test pass |
 | `rca-secure` | it is assigned or mentioned on an issue | triages SAST, secret and container findings by reachability in this code; dismisses nothing itself |
 | `rca-release` | a pipeline on `main` passes or fails | after a deploy: commits, scan results, and its own check of the live service (when its sandbox allows it), posted to the Production log issue; a failed promote or monitor run becomes an incident issue |
+| `rca-configure` | the `config-drift` job fails on `main` | opens the drift incident (fields, declared and live values, what the job did); only if a live value was better, a merge request adopting it into the config file. Never adopts an always-on instance, CPU without throttling or a closed public page |
 
 The flows are code: [`.gitlab/duo/flows/`](.gitlab/duo/flows) holds the YAML, [`flows.json`](.gitlab/duo/flows.json)
 their triggers and conditions, and [`deploy/duo_sync.py`](deploy/duo_sync.py) applies them through the GitLab API
@@ -243,6 +262,31 @@ reports `telemetry` (on or off, sent, failed, dropped), and the candidate and pr
 if telemetry is off, so a deploy that lost its endpoint cannot go dark unnoticed. The pipeline's own check questions
 are marked `ro.synthetic` (a hint: any client can send the header). The group's ingestion endpoint takes no key, so the telemetry is an
 operational signal, not evidence.
+
+## Configuration as code (GitLab, added 17 October 2026)
+
+The Cloud Run settings of production live in one file, [`deploy/service-config.json`](deploy/service-config.json):
+CPU, memory, concurrency, minimum and maximum instances, timeout, CPU throttling, the invoker IAM check, the fixed
+environment variables, and the NAMES of the ones that must exist (the model key's value lives only in a masked CI
+variable). [`deploy/cloudrun.sh`](deploy/cloudrun.sh) builds its deploy flags from that file, so there is no second copy.
+
+After every release on `main`, and on every scheduled run, the `config-drift` job reads the live service AND the
+revision that actually serves traffic, and compares both with the file ([`deploy/service_config.py`](deploy/service_config.py)).
+When someone changes a setting in the Cloud Run console, the job:
+
+1. names every difference (field, declared, live), never printing a secret value;
+2. puts production back to the file the same way a release does: the serving image is redeployed with the declared
+   settings as a candidate, checked, promoted, and rolled back if production fails the check;
+3. reads production again and stops with "drift persists after reconcile" (exit 2) if it still differs, because then
+   the checker or the file is wrong, not production;
+4. fails the pipeline on purpose, so the `rca-configure` flow opens the incident and judges whether the live value was
+   better. If it was, it opens a merge request that adopts it into the file, and a human decides.
+
+On a merge request, `config-preview` shows read-only what production would change if the new file were merged.
+`test_config_offline.py` (17 checks, no network) proves each kind of drift is caught, a secret never reaches the
+report, and an error object from Google instead of a service is "could not read", never "no drift".
+`CONFIG_DRIFT_DRILL=1` on a scheduled run first plants a drift the way a console edit would (maximum instances 5, on a
+revision that receives no traffic, and a value `rca-configure` refuses to adopt) to prove the whole loop live.
 
 ## The corpus
 

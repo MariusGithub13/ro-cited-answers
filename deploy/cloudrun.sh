@@ -6,6 +6,11 @@
 #   deploy/cloudrun.sh promote              send 100% to the candidate, remember the old one
 #   deploy/cloudrun.sh rollback             send 100% back to the revision before the promote
 #   deploy/cloudrun.sh url [candidate]      print the service (or candidate) URL
+#   deploy/cloudrun.sh live-json DIR        write the live service and its serving revision as JSON (configure stage)
+#   deploy/cloudrun.sh serving-image        print the image the serving revision runs
+#
+# The resource settings and fixed env vars come from deploy/service-config.json (configure stage):
+# that file is the one place they live, and the config-drift job compares it with the live service.
 #
 # Auth: an access token from deploy/gcp_token.py in $GCP_TOKEN_FILE (no key file).
 # The service scales to zero between visits: no idle compute, no idle cost.
@@ -20,10 +25,17 @@ STATE_FILE="${ROLLBACK_FILE:-previous-revision.txt}"
 
 g() { gcloud --quiet --project="$PROJECT" --access-token-file="$TOKEN_FILE" "$@"; }
 
+# The revision that serves production = the traffic entry with the highest percent. Never status.traffic[0]:
+# a tagged candidate with 0% also has an entry there (rca-review on !7, 17.10.2026). One definition for all callers.
+serving_rev() {
+  g run services describe "$SERVICE" --region="$REGION" --format=json \
+    | python3 -c 'import json,sys; t=json.load(sys.stdin)["status"]["traffic"]; print(max(t, key=lambda x: x.get("percent",0))["revisionName"])'
+}
+
 # Each commit gets its OWN candidate tag. A shared "candidate" tag let two main pipelines that ran
 # at the same time validate each other's revision (pipeline 2954466465, 16.10.2026, caught by the
 # version check and diagnosed by the rca-fix flow in issue #4).
-export TAG="c-${CI_COMMIT_SHORT_SHA:-local}"
+export TAG="${RUN_TAG:-c-${CI_COMMIT_SHORT_SHA:-local}}"
 
 case "${1:-}" in
   ensure-repo)
@@ -38,26 +50,40 @@ case "${1:-}" in
     # deploy takes traffic directly; every later one waits for the check.
     traffic="--no-traffic"
     g run services describe "$SERVICE" --region="$REGION" >/dev/null 2>&1 || traffic=""
+    here="$(dirname "$0")"
+    cfg_flags="$(python3 "$here/service_config.py" flags)"
+    cfg_vars="$(python3 "$here/service_config.py" fixed-vars)"
+    # shellcheck disable=SC2086  # cfg_flags is a list of flags built from the config file
     g run deploy "$SERVICE" --image="$image" --region="$REGION" \
       $traffic --tag="$TAG" \
-      --cpu=1 --memory=512Mi --concurrency=8 --min-instances=0 --max-instances=2 \
-      --timeout=120 --cpu-throttling \
-      --no-invoker-iam-check \
-      --set-env-vars="APP_VERSION=${APP_VERSION:-dev},RO_BACKEND=openai,RO_DAILY_CAP=${RO_DAILY_CAP:-400},NEBIUS_API_KEY=${NEBIUS_API_KEY:?NEBIUS_API_KEY},OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-},DEPLOY_ENV=production,GITLAB_PROJECT_ID=${CI_PROJECT_ID:-},GITLAB_PROJECT_NAME=${CI_PROJECT_NAME:-}" \
-      --labels="managed-by=gitlab-ci,commit=${CI_COMMIT_SHORT_SHA:-local}"
+      $cfg_flags \
+      --set-env-vars="APP_VERSION=${APP_VERSION:-dev},${cfg_vars},NEBIUS_API_KEY=${NEBIUS_API_KEY:?NEBIUS_API_KEY},OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-},GITLAB_PROJECT_ID=${CI_PROJECT_ID:-},GITLAB_PROJECT_NAME=${CI_PROJECT_NAME:-}" \
+      --labels="managed-by=gitlab-ci,commit=${COMMIT_LABEL:-${CI_COMMIT_SHORT_SHA:-local}}"
     ;;
   promote)
     # Remember what was serving, so rollback has a target read from the LIVE
     # service at promote time, never a constant written months ago.
-    g run services describe "$SERVICE" --region="$REGION" \
-      --format='value(status.traffic[0].revisionName)' > "$STATE_FILE" || true
+    serving_rev > "$STATE_FILE" || true
     echo "serving before promote: $(cat "$STATE_FILE")"
     g run services update-traffic "$SERVICE" --region="$REGION" --to-tags="$TAG=100"
     ;;
   serving-commit)
     # The short sha of the revision serving production, read from the commit label set at deploy.
-    rev=$(g run services describe "$SERVICE" --region="$REGION" --format='value(status.traffic[0].revisionName)')
+    rev=$(serving_rev)
     g run revisions describe "$rev" --region="$REGION" --format='value(metadata.labels.commit)'
+    ;;
+  live-json)
+    # The configure stage reads production from here: the service object, and the revision serving traffic.
+    out="${2:?dir}"; mkdir -p "$out"
+    g run services describe "$SERVICE" --region="$REGION" --format=json > "$out/service.json"
+    rev=$(python3 -c 'import json,sys; t=json.load(open(sys.argv[1]))["status"]["traffic"]; print(max(t, key=lambda x: x.get("percent",0))["revisionName"])' "$out/service.json")  # same rule as serving_rev
+    g run revisions describe "$rev" --region="$REGION" --format=json > "$out/serving.json"
+    echo "$rev" > "$out/serving-revision.txt"
+    echo "read live: service $SERVICE, serving revision $rev"
+    ;;
+  serving-image)
+    rev=$(serving_rev)
+    g run revisions describe "$rev" --region="$REGION" --format='value(spec.containers[0].image)'
     ;;
   cleanup)
     # Best effort, run only AFTER the production check passed: remove the candidate tags of commits

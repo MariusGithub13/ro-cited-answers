@@ -21,6 +21,12 @@
      "triggers": ["mention", "pipeline_hooks"],
      "conditions": {"pipelineHooks": {"match": "ALL", "rules": [
         {"field": "object_attributes.ref", "operator": "EQ", "value": "main"},
-        {"field": "object_attributes.status", "operator": "IN", "value": ["success", "failed"]}]}}}
+        {"field": "object_attributes.status", "operator": "IN", "value": ["success", "failed"]}]}}},
+    {"name": "rca-configure", "file": "configure.yml", "stage": "configure",
+     "description": "Configure stage: when the config-drift job finds production differing from deploy/service-config.json (and has put it back), opens the incident and, only if a live value was better, a merge request adopting it into the file.",
+     "triggers": ["mention", "pipeline_hooks"],
+     "conditions": {"pipelineHooks": {"match": "ALL", "rules": [
+        {"field": "object_attributes.ref", "operator": "EQ", "value": "main"},
+        {"field": "object_attributes.status", "operator": "IN", "value": ["failed"]}]}}}
   ]
 }

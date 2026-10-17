@@ -1,0 +1,28 @@
+{
+  "_doc": "Configure stage: the Cloud Run settings of production, declared once. deploy/cloudrun.sh deploys FROM this file, and the config-drift job compares it with the live service. To change a setting, change it here in a merge request. Secret VALUES never live here: only the names of the env vars that must exist.",
+  "service": "ro-cited",
+  "region": "europe-north1",
+  "cpu": "1",
+  "memory": "512Mi",
+  "concurrency": 8,
+  "min_instances": 0,
+  "max_instances": 2,
+  "timeout_seconds": 120,
+  "cpu_throttling": true,
+  "invoker_iam_check": false,
+  "env_fixed": {
+    "RO_BACKEND": "openai",
+    "RO_DAILY_CAP": "400",
+    "DEPLOY_ENV": "production"
+  },
+  "env_required": [
+    "APP_VERSION",
+    "NEBIUS_API_KEY",
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "GITLAB_PROJECT_ID",
+    "GITLAB_PROJECT_NAME"
+  ],
+  "labels": {
+    "managed-by": "gitlab-ci"
+  }
+}

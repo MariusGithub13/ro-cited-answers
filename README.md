@@ -285,7 +285,7 @@ When someone changes a setting in the Cloud Run console, the job:
 On a merge request, `config-preview` shows read-only what production would change if the new file were merged.
 `test_config_offline.py` (17 checks, no network) proves each kind of drift is caught, a secret never reaches the
 report, and an error object from Google instead of a service is "could not read", never "no drift".
-`CONFIG_DRIFT_DRILL=1` on a scheduled run first plants a drift the way a console edit would (maximum instances 5, on a
+A drill (`CONFIG_DRIFT_DRILL=1` on a scheduled run, or `[config-drift-drill]` in the message of a commit merged to `main`) first plants a drift the way a console edit would (maximum instances 5, on a
 revision that receives no traffic, and a value `rca-configure` refuses to adopt) to prove the whole loop live.
 
 ## The corpus

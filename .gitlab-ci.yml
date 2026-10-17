@@ -276,8 +276,9 @@ release-notes:
 # Drift (a console edit, a manual gcloud call) is reconciled the GitOps way: the serving image is
 # redeployed with the declared settings through the same candidate, check, promote and rollback path,
 # and the job then FAILS on purpose, so the rca-configure flow opens the incident and explains it.
-# CONFIG_DRIFT_DRILL=1 on a scheduled run first plants a drift on a revision that gets no traffic (max instances 5,
-# a value rca-configure refuses to adopt) to prove the loop end to end.
+# A drill first plants a drift on a revision that gets no traffic (max instances 5, a value rca-configure refuses to
+# adopt) to prove the loop end to end. It runs on a scheduled run with CONFIG_DRIFT_DRILL=1, or on the main pipeline of a
+# commit whose message carries [config-drift-drill] (pipeline variables need the Maintainer role, which we do not have).
 config-drift:
   stage: configure
   image: google/cloud-sdk:slim
@@ -292,7 +293,10 @@ config-drift:
   script:
     - python3 deploy/gcp_token.py > gcp-token.txt
     - |
-      if [ "${CONFIG_DRIFT_DRILL:-}" = "1" ] && [ "$CI_PIPELINE_SOURCE" = "schedule" ]; then
+      DRILL=""
+      if [ "${CONFIG_DRIFT_DRILL:-}" = "1" ] && [ "$CI_PIPELINE_SOURCE" = "schedule" ]; then DRILL=1; fi
+      case "$CI_COMMIT_MESSAGE" in *"[config-drift-drill]"*) [ "$CI_PIPELINE_SOURCE" = "push" ] && DRILL=1 ;; esac
+      if [ -n "$DRILL" ]; then
         echo "DRILL: planting a drift (max instances 5) the way a console edit would; traffic stays pinned, so it serves nothing"
         gcloud --quiet --project="$GCP_PROJECT" --access-token-file=gcp-token.txt run services update "$RUN_SERVICE" \
           --region="$GCP_REGION" --max-instances=5

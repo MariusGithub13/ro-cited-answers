@@ -7,12 +7,15 @@
 #   validate  the candidate must pass the live check (real page, real model, gates firing)
 #   release   promote to 100% traffic, re-check, ROLL BACK automatically if the check fails,
 #             then a GitLab release that names the revision
+#   configure the live Cloud Run settings are compared with deploy/service-config.json after every
+#             release and on every scheduled run; drift is put back to the file automatically
+#             (same candidate, check, promote, rollback path), and the rca-configure flow reports it
 #   monitor   a scheduled pipeline re-checks production and opens an issue when it fails
 #
 # Auth to Google Cloud uses Workload Identity Federation: GitLab signs a JWT for the
 # job, Google trusts gitlab.com, and no service account key exists anywhere.
 
-stages: [verify, secure, package, deploy, validate, release, monitor]
+stages: [verify, secure, package, deploy, validate, release, configure, monitor]
 
 variables:
   GCP_PROJECT: ro-cited-gitlab
@@ -71,7 +74,8 @@ gates-offline:
   script:
     - python3 test_gates_offline.py
     - python3 test_otel_offline.py
-    - python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py test_otel_offline.py eval/run_eval.py eval/build_items.py web/app.py web/otel.py deploy/*.py
+    - python3 test_config_offline.py
+    - python3 -m py_compile ask.py calibrate.py test_gates.py test_gates_offline.py test_otel_offline.py test_config_offline.py eval/run_eval.py eval/build_items.py web/app.py web/otel.py deploy/*.py
 
 eval-set-reproducible:
   stage: verify
@@ -265,6 +269,76 @@ release-notes:
     name: "v$CI_PIPELINE_IID ($CI_COMMIT_SHORT_SHA)"
     description: "Deployed $CI_COMMIT_SHORT_SHA to Cloud Run ($GCP_REGION). Live: $PROD_URL. Passed the gate tests, SAST, secret detection, container scan, the candidate check and the production check."
     ref: $CI_COMMIT_SHA
+
+# ---------------------------------------------------------------- configure
+# deploy/service-config.json is the one place the production settings live (cloudrun.sh deploys from it).
+# This job reads the live service and the revision that serves traffic, and compares both with the file.
+# Drift (a console edit, a manual gcloud call) is reconciled the GitOps way: the serving image is
+# redeployed with the declared settings through the same candidate, check, promote and rollback path,
+# and the job then FAILS on purpose, so the rca-configure flow opens the incident and explains it.
+# CONFIG_DRIFT_DRILL=1 on a scheduled run first plants a harmless drift (max instances 3) to prove it.
+config-drift:
+  stage: configure
+  image: google/cloud-sdk:slim
+  extends: .gcp_auth
+  resource_group: production
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  needs:
+    - job: promote
+      optional: true
+  script:
+    - python3 deploy/gcp_token.py > gcp-token.txt
+    - |
+      if [ "${CONFIG_DRIFT_DRILL:-}" = "1" ] && [ "$CI_PIPELINE_SOURCE" = "schedule" ]; then
+        echo "DRILL: planting a harmless drift (max instances 3) the way a console edit would"
+        gcloud --quiet --project="$GCP_PROJECT" --access-token-file=gcp-token.txt run services update "$RUN_SERVICE" \
+          --region="$GCP_REGION" --max-instances=3
+      fi
+    - deploy/cloudrun.sh live-json live
+    - set +e; python3 deploy/service_config.py check live/service.json --serving live/serving.json | tee drift.txt; rc=${PIPESTATUS[0]}; set -e
+    - if [ "$rc" = 0 ]; then rm -f gcp-token.txt; exit 0; fi
+    - if [ "$rc" != 1 ]; then echo "could not read the live configuration"; rm -f gcp-token.txt; exit 2; fi
+    # Reconcile: same image and same app version as production, settings from the file.
+    - IMAGE=$(deploy/cloudrun.sh serving-image)
+    - export APP_VERSION=$(python3 -c 'import json; e=json.load(open("live/serving.json"))["spec"]["containers"][0].get("env",[]); print(next((x.get("value","") for x in e if x["name"]=="APP_VERSION"), ""))')
+    - export RUN_TAG="cfg-${CI_PIPELINE_IID}"
+    - echo "reconciling $IMAGE (version $APP_VERSION) to deploy/service-config.json as tag $RUN_TAG"
+    - deploy/cloudrun.sh candidate "$IMAGE"
+    - python3 deploy/smoke.py "$(deploy/cloudrun.sh url candidate)" --no-model
+    - deploy/cloudrun.sh promote
+    - |
+      if ! python3 deploy/smoke.py "$(deploy/cloudrun.sh url)" --no-model; then
+        echo "production check FAILED after reconcile: rolling back"
+        deploy/cloudrun.sh rollback
+        exit 1
+      fi
+    - deploy/cloudrun.sh live-json live-after
+    # If production still differs after a deploy FROM the file, the checker or the file is wrong: say so (exit 2).
+    - set +e; python3 deploy/service_config.py check live-after/service.json --serving live-after/serving.json | tee reconciled.txt; rc=${PIPESTATUS[0]}; set -e
+    - if [ "$rc" != 0 ]; then echo "drift persists after reconcile: the checker or deploy/service-config.json is wrong"; rm -f gcp-token.txt; exit 2; fi
+    - rm -f gcp-token.txt
+    - echo "CONFIG DRIFT found and reconciled; failing on purpose so rca-configure reports it"
+    - exit 1
+  artifacts:
+    when: always
+    paths: [drift.txt, reconciled.txt, live/serving-revision.txt, live-after/serving-revision.txt]
+
+# Read-only on merge requests: what production would change if this MR's service-config.json were merged.
+config-preview:
+  stage: configure
+  image: google/cloud-sdk:slim
+  extends: .gcp_auth
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  needs: []
+  allow_failure: true
+  script:
+    - python3 deploy/gcp_token.py > gcp-token.txt
+    - deploy/cloudrun.sh live-json live
+    - rm -f gcp-token.txt
+    - python3 deploy/service_config.py check live/service.json --serving live/serving.json
 
 # ---------------------------------------------------------------- monitor
 monitor-production:

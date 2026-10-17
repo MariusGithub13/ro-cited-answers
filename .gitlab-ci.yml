@@ -301,7 +301,9 @@ config-drift:
     - if [ "$rc" = 0 ]; then rm -f gcp-token.txt; exit 0; fi
     - if [ "$rc" != 1 ]; then echo "could not read the live configuration"; rm -f gcp-token.txt; exit 2; fi
     # Reconcile: same image and same app version as production, settings from the file.
-    - IMAGE=$(deploy/cloudrun.sh serving-image)
+    # The image comes from the same serving.json that was compared: one definition of "serving" for both.
+    - IMAGE=$(python3 -c 'import json; print(json.load(open("live/serving.json"))["spec"]["containers"][0]["image"])')
+    - test -n "$IMAGE"
     - export APP_VERSION=$(python3 -c 'import json; e=json.load(open("live/serving.json"))["spec"]["containers"][0].get("env",[]); print(next((x.get("value","") for x in e if x["name"]=="APP_VERSION"), ""))')
     - export RUN_TAG="cfg-${CI_PIPELINE_IID}"
     - echo "reconciling $IMAGE (version $APP_VERSION) to deploy/service-config.json as tag $RUN_TAG"

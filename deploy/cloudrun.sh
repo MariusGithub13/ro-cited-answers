@@ -25,6 +25,13 @@ STATE_FILE="${ROLLBACK_FILE:-previous-revision.txt}"
 
 g() { gcloud --quiet --project="$PROJECT" --access-token-file="$TOKEN_FILE" "$@"; }
 
+# The revision that serves production = the traffic entry with the highest percent. Never status.traffic[0]:
+# a tagged candidate with 0% also has an entry there (rca-review on !7, 17.10.2026). One definition for all callers.
+serving_rev() {
+  g run services describe "$SERVICE" --region="$REGION" --format=json \
+    | python3 -c 'import json,sys; t=json.load(sys.stdin)["status"]["traffic"]; print(max(t, key=lambda x: x.get("percent",0))["revisionName"])'
+}
+
 # Each commit gets its OWN candidate tag. A shared "candidate" tag let two main pipelines that ran
 # at the same time validate each other's revision (pipeline 2954466465, 16.10.2026, caught by the
 # version check and diagnosed by the rca-fix flow in issue #4).
@@ -56,27 +63,26 @@ case "${1:-}" in
   promote)
     # Remember what was serving, so rollback has a target read from the LIVE
     # service at promote time, never a constant written months ago.
-    g run services describe "$SERVICE" --region="$REGION" \
-      --format='value(status.traffic[0].revisionName)' > "$STATE_FILE" || true
+    serving_rev > "$STATE_FILE" || true
     echo "serving before promote: $(cat "$STATE_FILE")"
     g run services update-traffic "$SERVICE" --region="$REGION" --to-tags="$TAG=100"
     ;;
   serving-commit)
     # The short sha of the revision serving production, read from the commit label set at deploy.
-    rev=$(g run services describe "$SERVICE" --region="$REGION" --format='value(status.traffic[0].revisionName)')
+    rev=$(serving_rev)
     g run revisions describe "$rev" --region="$REGION" --format='value(metadata.labels.commit)'
     ;;
   live-json)
     # The configure stage reads production from here: the service object, and the revision serving traffic.
     out="${2:?dir}"; mkdir -p "$out"
     g run services describe "$SERVICE" --region="$REGION" --format=json > "$out/service.json"
-    rev=$(python3 -c 'import json,sys; t=json.load(open(sys.argv[1]))["status"]["traffic"]; print(max(t, key=lambda x: x.get("percent",0))["revisionName"])' "$out/service.json")
+    rev=$(python3 -c 'import json,sys; t=json.load(open(sys.argv[1]))["status"]["traffic"]; print(max(t, key=lambda x: x.get("percent",0))["revisionName"])' "$out/service.json")  # same rule as serving_rev
     g run revisions describe "$rev" --region="$REGION" --format=json > "$out/serving.json"
     echo "$rev" > "$out/serving-revision.txt"
     echo "read live: service $SERVICE, serving revision $rev"
     ;;
   serving-image)
-    rev=$(g run services describe "$SERVICE" --region="$REGION" --format='value(status.traffic[0].revisionName)')
+    rev=$(serving_rev)
     g run revisions describe "$rev" --region="$REGION" --format='value(spec.containers[0].image)'
     ;;
   cleanup)

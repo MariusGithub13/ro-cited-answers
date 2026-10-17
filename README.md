@@ -31,7 +31,7 @@ Project: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/
 | package | one image per commit to the GitLab registry and Artifact Registry, then container scanning | container registry: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/container_registry |
 | secure | SAST, secret detection, container scanning; `rca-secure` triages by reachability and moved the base image | !4, container findings 166 to 1: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/merge_requests/4 |
 | release | candidate revision with no traffic, live check, promote, automatic rollback, a release per deploy; `rca-release` posts each one | releases: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/releases · Production log: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/issues/2 |
-| configure | production settings declared in [`deploy/service-config.json`](deploy/service-config.json); `config-drift` compares them with the live service and puts drift back; `rca-configure` reports it | [Configuration as code](#configuration-as-code-gitlab-added-17-october-2026) |
+| configure | production settings declared in [`deploy/service-config.json`](deploy/service-config.json); `config-drift` compares them with the live service and puts drift back; `rca-configure` reports it | the live drill of 17 October: drift planted, caught, put back, reported: pipeline https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/pipelines/2957926891 · incident #5 by `rca-configure`: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/issues/5 · [how it works](#configuration-as-code-gitlab-added-17-october-2026) |
 | monitor | a schedule every 6 hours re-checks production; one span per question to GitLab Observability | pipeline schedules: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/pipeline_schedules · [Observability](#observability-gitlab-added-16-october-2026) |
 | govern | [AGENTS.md](AGENTS.md) binds every agent (11 rules: never lower a gate, never answer without a citation, agents never merge or deploy); per-path review rules; the flow sandbox may reach only production | [`.gitlab/duo/`](.gitlab/duo) |
 
@@ -287,6 +287,12 @@ On a merge request, `config-preview` shows read-only what production would chang
 report, and an error object from Google instead of a service is "could not read", never "no drift".
 A drill (`CONFIG_DRIFT_DRILL=1` on a scheduled run, or a line that is exactly `[config-drift-drill]` in the message of a commit merged to `main`) first plants a drift the way a console edit would (maximum instances 5, on a
 revision that receives no traffic, and a value `rca-configure` refuses to adopt) to prove the whole loop live.
+
+The first live drill, 17 October 2026: the job planted `max_instances` 5 (declared 2), caught it, redeployed production from
+the file (candidate `cfg-72`, check 5 of 5, promote, check 5 of 5), read production again (0 differences) and failed on
+purpose. Minutes later `rca-configure` opened incident #5 with the field, both values and what the job did, called it a
+drill, and refused to adopt 5 because it is above the limit of 3. The fix and release flows stayed silent.
+Pipeline: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/pipelines/2957926891 · incident: https://gitlab.com/gitlab-ai-hackathon/transcend-october-2026/43427415/ro-cited-answers/-/issues/5
 
 ## The corpus
 

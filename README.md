@@ -277,15 +277,16 @@ When someone changes a setting in the Cloud Run console, the job:
 1. names every difference (field, declared, live), never printing a secret value;
 2. puts production back to the file the same way a release does: the serving image is redeployed with the declared
    settings as a candidate, checked, promoted, and rolled back if production fails the check;
-3. reads production again and fails with "could not settle it" if it still differs, because then the checker or the
-   file is wrong, not production;
+3. reads production again and stops with "drift persists after reconcile" (exit 2) if it still differs, because then
+   the checker or the file is wrong, not production;
 4. fails the pipeline on purpose, so the `rca-configure` flow opens the incident and judges whether the live value was
    better. If it was, it opens a merge request that adopts it into the file, and a human decides.
 
 On a merge request, `config-preview` shows read-only what production would change if the new file were merged.
 `test_config_offline.py` (17 checks, no network) proves each kind of drift is caught, a secret never reaches the
 report, and an error object from Google instead of a service is "could not read", never "no drift".
-`CONFIG_DRIFT_DRILL=1` on a scheduled run plants a harmless drift first (maximum instances 3) to prove the whole loop live.
+`CONFIG_DRIFT_DRILL=1` on a scheduled run first plants a drift the way a console edit would (maximum instances 5, on a
+revision that receives no traffic, and a value `rca-configure` refuses to adopt) to prove the whole loop live.
 
 ## The corpus
 

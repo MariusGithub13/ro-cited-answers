@@ -276,7 +276,8 @@ release-notes:
 # Drift (a console edit, a manual gcloud call) is reconciled the GitOps way: the serving image is
 # redeployed with the declared settings through the same candidate, check, promote and rollback path,
 # and the job then FAILS on purpose, so the rca-configure flow opens the incident and explains it.
-# CONFIG_DRIFT_DRILL=1 on a scheduled run first plants a harmless drift (max instances 3) to prove it.
+# CONFIG_DRIFT_DRILL=1 on a scheduled run first plants a drift on a revision that gets no traffic (max instances 5,
+# a value rca-configure refuses to adopt) to prove the loop end to end.
 config-drift:
   stage: configure
   image: google/cloud-sdk:slim
@@ -292,9 +293,9 @@ config-drift:
     - python3 deploy/gcp_token.py > gcp-token.txt
     - |
       if [ "${CONFIG_DRIFT_DRILL:-}" = "1" ] && [ "$CI_PIPELINE_SOURCE" = "schedule" ]; then
-        echo "DRILL: planting a harmless drift (max instances 3) the way a console edit would"
+        echo "DRILL: planting a drift (max instances 5) the way a console edit would; traffic stays pinned, so it serves nothing"
         gcloud --quiet --project="$GCP_PROJECT" --access-token-file=gcp-token.txt run services update "$RUN_SERVICE" \
-          --region="$GCP_REGION" --max-instances=3
+          --region="$GCP_REGION" --max-instances=5
       fi
     - deploy/cloudrun.sh live-json live
     - set +e; python3 deploy/service_config.py check live/service.json --serving live/serving.json | tee drift.txt; rc=${PIPESTATUS[0]}; set -e
@@ -306,6 +307,8 @@ config-drift:
     - test -n "$IMAGE"
     - export APP_VERSION=$(python3 -c 'import json; e=json.load(open("live/serving.json"))["spec"]["containers"][0].get("env",[]); print(next((x.get("value","") for x in e if x["name"]=="APP_VERSION"), ""))')
     - export RUN_TAG="cfg-${CI_PIPELINE_IID}"
+    # The redeployed revision keeps the commit label of the image it runs, not of this pipeline (serving-commit reads it).
+    - export COMMIT_LABEL=$(python3 -c 'import json; print(json.load(open("live/serving.json"))["metadata"].get("labels",{}).get("commit",""))')
     - echo "reconciling $IMAGE (version $APP_VERSION) to deploy/service-config.json as tag $RUN_TAG"
     - deploy/cloudrun.sh candidate "$IMAGE"
     - python3 deploy/smoke.py "$(deploy/cloudrun.sh url candidate)" --no-model
@@ -347,6 +350,8 @@ config-preview:
 monitor-production:
   stage: monitor
   image: python:3.12-slim
+  # Never skipped because config-drift failed on purpose earlier in the same scheduled pipeline.
+  needs: []
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
   script:

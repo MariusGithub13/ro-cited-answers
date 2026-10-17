@@ -58,7 +58,7 @@ case "${1:-}" in
       $traffic --tag="$TAG" \
       $cfg_flags \
       --set-env-vars="APP_VERSION=${APP_VERSION:-dev},${cfg_vars},NEBIUS_API_KEY=${NEBIUS_API_KEY:?NEBIUS_API_KEY},OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-},GITLAB_PROJECT_ID=${CI_PROJECT_ID:-},GITLAB_PROJECT_NAME=${CI_PROJECT_NAME:-}" \
-      --labels="managed-by=gitlab-ci,commit=${CI_COMMIT_SHORT_SHA:-local}"
+      --labels="managed-by=gitlab-ci,commit=${COMMIT_LABEL:-${CI_COMMIT_SHORT_SHA:-local}}"
     ;;
   promote)
     # Remember what was serving, so rollback has a target read from the LIVE

@@ -36,7 +36,7 @@ Every decision goes to the audit log. A refusal is a correct output, not a bug.
 - `python3 test_gates_offline.py` (no model, no network): the gate logic.
 - `python3 test_config_offline.py` (no network): the configure stage, declared settings against a live service dump.
 - `python3 deploy/smoke.py <url> --no-model`: the live page, the API, UTF-8, and a nonsense path that must 404.
-- The pipeline: verify, secure, package, deploy, validate, release, monitor (see `.gitlab-ci.yml`).
+- The pipeline: verify, secure, package, deploy, validate, release, configure, monitor (see `.gitlab-ci.yml`).
 
 ## Writing style for notes
 Plain text, short sections, no em dashes. Name files with paths and jobs by name.

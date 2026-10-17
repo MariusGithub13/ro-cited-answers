@@ -11,7 +11,7 @@ Offline tests for deploy/service_config.py (the configure stage): no network, no
   4. a secret value never appears in the report
   5. an unreadable live dump is "could not read" (exit 2), never a clean result
 """
-import copy, io, json, os, sys, tempfile
+import io, json, os, sys, tempfile
 from contextlib import redirect_stdout
 
 HERE = os.path.dirname(os.path.abspath(__file__))

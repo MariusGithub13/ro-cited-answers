@@ -317,7 +317,8 @@ config-drift:
     - deploy/cloudrun.sh live-json live-after
     # If production still differs after a deploy FROM the file, the checker or the file is wrong: say so (exit 2).
     - set +e; python3 deploy/service_config.py check live-after/service.json --serving live-after/serving.json | tee reconciled.txt; rc=${PIPESTATUS[0]}; set -e
-    - if [ "$rc" != 0 ]; then echo "drift persists after reconcile: the checker or deploy/service-config.json is wrong"; rm -f gcp-token.txt; exit 2; fi
+    - |
+      if [ "$rc" != 0 ]; then echo "drift persists after reconcile, so the checker or deploy/service-config.json is wrong"; rm -f gcp-token.txt; exit 2; fi
     - rm -f gcp-token.txt
     - echo "CONFIG DRIFT found and reconciled; failing on purpose so rca-configure reports it"
     - exit 1
